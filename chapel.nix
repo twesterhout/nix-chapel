@@ -3,7 +3,6 @@
 , python39
 , bash
 , gnustep
-, which
 }:
 
 llvmPackages.stdenv.mkDerivation rec {
@@ -24,6 +23,7 @@ llvmPackages.stdenv.mkDerivation rec {
     patchShebangs --build configure
     patchShebangs --build util/printchplenv
     patchShebangs --build util/config/compileline
+    patchShebangs --build util/test/checkChplInstall
 
     export CHPL_LLVM=system
     export CHPL_HOST_COMPILER=llvm
@@ -35,6 +35,11 @@ llvmPackages.stdenv.mkDerivation rec {
 
   buildPhase = ''
     make -j4
+  '';
+
+  checkPhase = ''
+    export PATH=$out/bin:$PATH
+    make check
   '';
 
   doCheck = true;
