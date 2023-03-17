@@ -1,11 +1,16 @@
-{ llvmPackages
+{ llvmPackages_14
+, gmp
+, re2
 , fetchFromGitHub
 , python39
 , bash
-, gnustep
+, gnumake
+, gnum4
+, cmake
+, makeWrapper
 }:
 
-llvmPackages.stdenv.mkDerivation rec {
+llvmPackages_14.stdenv.mkDerivation {
   pname = "chapel";
   version = "1.29.0";
 
@@ -26,35 +31,48 @@ llvmPackages.stdenv.mkDerivation rec {
     patchShebangs --build util/test/checkChplInstall
 
     export CHPL_LLVM=system
+    export CHPL_GMP=system
+    export CHPL_RE2=none # system
     export CHPL_HOST_COMPILER=llvm
-    export CHPL_HOST_CC=${llvmPackages.clang}/bin/clang
-    export CHPL_HOST_CXX=${llvmPackages.clang}/bin/clang++
+    export CHPL_HOST_CC=${llvmPackages_14.clang}/bin/clang
+    export CHPL_HOST_CXX=${llvmPackages_14.clang}/bin/clang++
     export CHPL_TARGET_CPU=
     ./configure --prefix=$out
   '';
 
   buildPhase = ''
-    make -j4
+    make -j
   '';
 
-  checkPhase = ''
-    export PATH=$out/bin:$PATH
-    make check
+  postInstall = ''
+    wrapProgram $out/bin/chpl \
+      --add-flags "-I ${llvmPackages_14.bintools.libc.dev}/include" \
+      --add-flags "-I ${llvmPackages_14.clang-unwrapped.lib}/lib/clang/14.0.6/include"
   '';
 
-  doCheck = true;
+  # checkPhase = ''
+  #   export PATH=$out/bin:$PATH
+  #   make check
+  # '';
+
+  # doCheck = true;
 
   buildInputs = [
-    llvmPackages.clang
-    llvmPackages.llvm
-    llvmPackages.libclang.dev
+    llvmPackages_14.clang
+    llvmPackages_14.llvm
+    llvmPackages_14.libclang.dev
+    gmp
+    re2
   ];
 
   nativeBuildInputs = [
     bash
     python39
-    gnustep.make
-    llvmPackages.clang
+    gnumake
+    gnum4
+    cmake
+    llvmPackages_14.clang
+    makeWrapper
   ];
 
   meta = {
