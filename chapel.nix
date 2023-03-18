@@ -6,6 +6,7 @@
 , bash
 , gnumake
 , gnum4
+, which
 , cmake
 , makeWrapper
 }:
@@ -47,15 +48,27 @@ llvmPackages_14.stdenv.mkDerivation {
   postInstall = ''
     wrapProgram $out/bin/chpl \
       --add-flags "-I ${llvmPackages_14.bintools.libc.dev}/include" \
-      --add-flags "-I ${llvmPackages_14.clang-unwrapped.lib}/lib/clang/14.0.6/include"
+      --add-flags "-I ${llvmPackages_14.clang-unwrapped.lib}/lib/clang/14.0.6/include" \
+      --add-flags "-L ${gmp}/lib"
   '';
 
-  # checkPhase = ''
-  #   export PATH=$out/bin:$PATH
-  #   make check
-  # '';
+  checkPhase = ''
+    # export PATH=$out/bin:$PATH
+    # make check
+    echo "==== START checkPhase ===="
+    # ls -l
+    # find . -type f -name "chpl"
+    export PATH=$PWD/bin/linux64-x86_64:$PATH
+    wrapProgram bin/linux64-x86_64/chpl \
+      --add-flags "-I ${llvmPackages_14.bintools.libc.dev}/include" \
+      --add-flags "-I ${llvmPackages_14.clang-unwrapped.lib}/lib/clang/14.0.6/include" \
+      --add-flags "-L ${gmp}/lib"
+    echo "==== invoking make check ===="
+    make check
+    echo "==== END checkPhase ===="
+  '';
 
-  # doCheck = true;
+  doCheck = true;
 
   buildInputs = [
     llvmPackages_14.clang
@@ -70,6 +83,7 @@ llvmPackages_14.stdenv.mkDerivation {
     python39
     gnumake
     gnum4
+    which
     cmake
     llvmPackages_14.clang
     makeWrapper

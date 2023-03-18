@@ -32,7 +32,9 @@
         nativeBuildInputs = with pkgs; [
           bash
           python39
-          gnustep.make
+          gnumake
+          gnum4
+          which
           cmake
           clang_14
           llvmPackages_14.clang-unwrapped
