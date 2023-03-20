@@ -50,13 +50,14 @@ llvmPackages_14.stdenv.mkDerivation {
   buildPhase = ''
     for CHPL_LIB_PIC in none pic; do
       for CHPL_UNWIND in none system; do
-        make CHPL_LIB_PIC=$CHPL_LIB_PI -j
+        make  CHPL_UNWIND=$CHPL_UNWIND CHPL_LIB_PIC=$CHPL_LIB_PIC -j
       done
     done
   '';
 
   postInstall = ''
     makeWrapper $out/bin/linux64-x86_64/chpl $out/bin/chpl \
+      --prefix PATH : "${llvmPackages_14.clang}/bin" \
       --prefix PATH : "${pkg-config}/bin" \
       --prefix PKG_CONFIG_PATH : "${libunwind.dev}/lib/pkgconfig" \
       --set-default CHPL_HOME $out \
