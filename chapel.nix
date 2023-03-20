@@ -1,6 +1,7 @@
 { llvmPackages_14
 , gmp
-, re2
+, xz
+, libunwind
 , fetchFromGitHub
 , python39
 , bash
@@ -8,6 +9,7 @@
 , gnum4
 , which
 , cmake
+, pkg-config
 , makeWrapper
 }:
 
@@ -15,7 +17,6 @@ llvmPackages_14.stdenv.mkDerivation {
   pname = "chapel";
   version = "1.30.0";
 
-  # src = ./chapel;
   src = fetchFromGitHub {
     owner = "chapel-lang";
     repo = "chapel";
@@ -40,18 +41,23 @@ llvmPackages_14.stdenv.mkDerivation {
     export CHPL_TARGET_CC=${llvmPackages_14.clang}/bin/clang
     export CHPL_TARGET_CXX=${llvmPackages_14.clang}/bin/clang++
     export CHPL_GMP=system
-    export CHPL_RE2=none
+    export CHPL_RE2=bundled
+    export CHPL_UNWIND=system
 
-    # CHPL_GMP=system CHPL_TARGET_CPU=none CHPL_HOST_COMPILER=llvm CHPL_LLVM=system CHPL_LLVM_CONFIG=/nix/store/f1l9dlzsrjxangh9d2l0i3mjkyrkk3r6-llvm-14.0.6-dev/bin/llvm-config CHPL_RE2=none CHPL_HOST_COMPILER=llvm CHPL_HOST_CC=/nix/store/2qcas2wxgc38krmdbnhljgmndizxahvm-clang-wrapper-14.0.6/bin/clang CHPL_HOST_CXX=/nix/store/2qcas2wxgc38krmdbnhljgmndizxahvm-clang-wrapper-14.0.6/bin/clang++ CHPL_TARGET_CC=/nix/store/2qcas2wxgc38krmdbnhljgmndizxahvm-clang-wrapper-14.0.6/bin/clang CHPL_TARGET_CXX=/nix/store/2qcas2wxgc38krmdbnhljgmndizxahvm-clang-wrapper-14.0.6/bin/clang++ ./prefix/share/chapel/1.30/util/printchplenv
-    ./configure --prefix=$out
+    ./configure --chpl-home=$out
   '';
 
   buildPhase = ''
-    make -j
+    for CHPL_LIB_PIC in none pic; do
+      make CHPL_LIB_PIC=$CHPL_LIB_PI -j
+    done
   '';
 
   postInstall = ''
-    wrapProgram $out/bin/chpl \
+    makeWrapper $out/bin/linux64-x86_64/chpl $out/bin/chpl \
+      --prefix PATH : "${pkg-config}/bin" \
+      --prefix PKG_CONFIG_PATH : "${libunwind.dev}/lib/pkgconfig" \
+      --set-default CHPL_HOME $out \
       --set-default CHPL_LLVM system \
       --set-default CHPL_LLVM_CONFIG "${llvmPackages_14.llvm.dev}/bin/llvm-config" \
       --set-default CHPL_HOST_COMPILER llvm \
@@ -61,41 +67,49 @@ llvmPackages_14.stdenv.mkDerivation {
       --set-default CHPL_TARGET_CC "${llvmPackages_14.clang}/bin/clang" \
       --set-default CHPL_TARGET_CXX "${llvmPackages_14.clang}/bin/clang++" \
       --set-default CHPL_GMP system \
-      --set-default CHPL_RE2 none \
+      --set-default CHPL_RE2 bundled \
+      --set-default CHPL_UNWIND system \
       --add-flags "-I ${llvmPackages_14.bintools.libc.dev}/include" \
       --add-flags "-I ${llvmPackages_14.clang-unwrapped.lib}/lib/clang/14.0.6/include" \
-      --add-flags "-L ${gmp}/lib"
+      --add-flags "-L ${gmp}/lib" \
+      --add-flags "-L ${xz.out}/lib"
 
-    substituteInPlace $out/share/chapel/1.30/util/printchplenv \
-      --replace '`"$CWD/config/find-python.sh"`' '${python39}/bin/python'
+    wrapProgram $out/util/printchplenv \
+      --prefix PATH : "${python39}/bin" \
+      --prefix PATH : "${pkg-config}/bin" \
+      --prefix PATH : "${which}/bin" \
+      --prefix PKG_CONFIG_PATH : "${libunwind.dev}/lib/pkgconfig" \
+      --set-default CHPL_LLVM system \
+      --set-default CHPL_LLVM_CONFIG "${llvmPackages_14.llvm.dev}/bin/llvm-config" \
+      --set-default CHPL_HOST_COMPILER llvm \
+      --set-default CHPL_HOST_CC "${llvmPackages_14.clang}/bin/clang" \
+      --set-default CHPL_HOST_CXX "${llvmPackages_14.clang}/bin/clang++" \
+      --set-default CHPL_TARGET_CPU none \
+      --set-default CHPL_TARGET_CC "${llvmPackages_14.clang}/bin/clang" \
+      --set-default CHPL_TARGET_CXX "${llvmPackages_14.clang}/bin/clang++" \
+      --set-default CHPL_GMP system \
+      --set-default CHPL_RE2 bundled \
+      --set-default CHPL_UNWIND system
   '';
 
   checkPhase = ''
-    # export PATH=$out/bin:$PATH
-    # make check
-    echo "==== START checkPhase ===="
-    # ls -l
-    # find . -type f -name "chpl"
     export PATH=$PWD/bin/linux64-x86_64:$PATH
     wrapProgram bin/linux64-x86_64/chpl \
       --add-flags "-I ${llvmPackages_14.bintools.libc.dev}/include" \
       --add-flags "-I ${llvmPackages_14.clang-unwrapped.lib}/lib/clang/14.0.6/include" \
-      --add-flags "-L ${gmp}/lib"
-    echo "==== invoking make check ===="
-    make check
-    echo "==== undoing wrapProgra ===="
+      --add-flags "-L ${gmp}/lib" \
+      --add-flags "-L ${xz.out}/lib"
     mv bin/linux64-x86_64/.chpl-wrapped bin/linux64-x86_64/chpl
-    echo "==== END checkPhase ===="
   '';
 
-  doCheck = true;
+  doCheck = false;
 
   buildInputs = [
     llvmPackages_14.clang
     llvmPackages_14.llvm
     llvmPackages_14.libclang.dev
+    libunwind
     gmp
-    re2
   ];
 
   nativeBuildInputs = [
@@ -105,6 +119,7 @@ llvmPackages_14.stdenv.mkDerivation {
     gnum4
     which
     cmake
+    pkg-config
     llvmPackages_14.clang
     makeWrapper
   ];

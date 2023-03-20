@@ -32,6 +32,7 @@
           llvmPackages_14.clang
           llvmPackages_14.llvm
           llvmPackages_14.libclang.dev
+          libunwind
         ];
         nativeBuildInputs = with pkgs; [
           bash
@@ -40,6 +41,7 @@
           gnum4
           which
           cmake
+          pkg-config
           clang_14
           llvmPackages_14.clang-unwrapped
           llvmPackages_14.clang-unwrapped.dev
@@ -64,7 +66,9 @@
           export CHPL_GMP=system
           export CHPL_RE2=none
 
-          CHPL_GMP=system CHPL_TARGET_CPU=none CHPL_HOST_COMPILER=llvm CHPL_LLVM=system CHPL_LLVM_CONFIG=/nix/store/f1l9dlzsrjxangh9d2l0i3mjkyrkk3r6-llvm-14.0.6-dev/bin/llvm-config CHPL_RE2=none CHPL_HOST_COMPILER=llvm CHPL_HOST_CC=/nix/store/2qcas2wxgc38krmdbnhljgmndizxahvm-clang-wrapper-14.0.6/bin/clang CHPL_HOST_CXX=/nix/store/2qcas2wxgc38krmdbnhljgmndizxahvm-clang-wrapper-14.0.6/bin/clang++ CHPL_TARGET_CC=/nix/store/2qcas2wxgc38krmdbnhljgmndizxahvm-clang-wrapper-14.0.6/bin/clang CHPL_TARGET_CXX=/nix/store/2qcas2wxgc38krmdbnhljgmndizxahvm-clang-wrapper-14.0.6/bin/clang++ ./prefix/share/chapel/1.30/util/printchplenv
+          export UNWIND_PATH=${pkgs.llvmPackages_14.libunwind}
+          export XZ_PATH=${pkgs.xz}
+          export XZ_PATH_DEV=${pkgs.xz.dev}
           export EXTRA_FLAGS='-I ${pkgs.llvmPackages_14.bintools.libc.dev}/include -I ${pkgs.llvmPackages_14.clang-unwrapped.lib}/lib/clang/14.0.6/include'
         '';
       };
