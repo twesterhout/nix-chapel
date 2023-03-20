@@ -49,7 +49,9 @@ llvmPackages_14.stdenv.mkDerivation {
 
   buildPhase = ''
     for CHPL_LIB_PIC in none pic; do
-      make CHPL_LIB_PIC=$CHPL_LIB_PI -j
+      for CHPL_UNWIND in none system; do
+        make CHPL_LIB_PIC=$CHPL_LIB_PI -j
+      done
     done
   '';
 
