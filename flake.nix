@@ -28,6 +28,7 @@
         program = "${chapel}/bin/chpl";
       };
       devShells.default = (pkgs.mkShell.override { stdenv = pkgs.llvmPackages_14.stdenv; }) {
+        packages = [ chapel ];
         buildInputs = with pkgs; [
           llvmPackages_14.clang
           llvmPackages_14.llvm

@@ -9,8 +9,11 @@
 , gnum4
 , which
 , cmake
+, mpi
+, rdma-core
 , pkg-config
 , makeWrapper
+, perl
 }:
 
 llvmPackages_14.stdenv.mkDerivation {
@@ -18,13 +21,24 @@ llvmPackages_14.stdenv.mkDerivation {
   version = "1.30.0";
 
   src = fetchFromGitHub {
-    owner = "chapel-lang";
+    owner = "bradcray";
     repo = "chapel";
-    rev = "a5d4cf00ac813be8e77203bcdd76aea7bddff940";
-    sha256 = "sha256-uh2HFx8R8/fIWwaKOnkpLza+Q+AaXoBNnVPaVblZ7oM=";
+    rev = "build-amudprun-host-with-host-cc";
+    sha256 = "sha256-6Ijg8vfeozxCrEp9ZyWg9lf5bdB8+DDNBQTQU126VJ8=";
   };
+  # src = fetchFromGitHub {
+  #   owner = "chapel-lang";
+  #   repo = "chapel";
+  #   rev = "a5d4cf00ac813be8e77203bcdd76aea7bddff940";
+  #   sha256 = "sha256-uh2HFx8R8/fIWwaKOnkpLza+Q+AaXoBNnVPaVblZ7oM=";
+  # };
 
   patches = [ ./llvm-and-clang-paths.patch ];
+  postPatch = ''
+    # substituteInPlace third-party/gasnet/gasnet-src/other/amudp/Makefile.common \
+    #   --replace 'CC = gcc' 'CC = cc' \
+    #   --replace 'CXX = g++' 'CXX = c++'
+  '';
 
   configurePhase = ''
     patchShebangs --build configure
@@ -32,6 +46,8 @@ llvmPackages_14.stdenv.mkDerivation {
     patchShebangs --build util/config/compileline
     patchShebangs --build util/test/checkChplInstall
 
+    export CC=${llvmPackages_14.stdenv.cc}/bin/cc
+    export CXX=${llvmPackages_14.stdenv.cc}/bin/c++
     export CHPL_LLVM=system
     export CHPL_LLVM_CONFIG=${llvmPackages_14.llvm.dev}/bin/llvm-config
     export CHPL_HOST_COMPILER=llvm
@@ -48,17 +64,23 @@ llvmPackages_14.stdenv.mkDerivation {
   '';
 
   buildPhase = ''
-    for CHPL_LIB_PIC in none pic; do
-      for CHPL_UNWIND in none system; do
-        make  CHPL_UNWIND=$CHPL_UNWIND CHPL_LIB_PIC=$CHPL_LIB_PIC -j
-      done
-    done
+    make -j
+    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp -j
+    # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp -j
+    # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=mpi -j
+    # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=smp -j
+    # for CHPL_LIB_PIC in none pic; do
+    #   for CHPL_UNWIND in none system; do
+    #     make  CHPL_UNWIND=$CHPL_UNWIND CHPL_LIB_PIC=$CHPL_LIB_PIC -j
+    #   done
+    # done
   '';
 
   postInstall = ''
     makeWrapper $out/bin/linux64-x86_64/chpl $out/bin/chpl \
       --prefix PATH : "${llvmPackages_14.clang}/bin" \
       --prefix PATH : "${pkg-config}/bin" \
+      --prefix PATH : "${mpi}/bin" \
       --prefix PKG_CONFIG_PATH : "${libunwind.dev}/lib/pkgconfig" \
       --set-default CHPL_HOME $out \
       --set-default CHPL_LLVM system \
@@ -113,6 +135,8 @@ llvmPackages_14.stdenv.mkDerivation {
     llvmPackages_14.libclang.dev
     libunwind
     gmp
+    mpi
+    rdma-core
   ];
 
   nativeBuildInputs = [
@@ -122,6 +146,7 @@ llvmPackages_14.stdenv.mkDerivation {
     gnum4
     which
     cmake
+    perl
     pkg-config
     llvmPackages_14.clang
     makeWrapper
