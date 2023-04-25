@@ -65,7 +65,7 @@ llvmPackages_14.stdenv.mkDerivation {
 
   buildPhase = ''
     make -j
-    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp -j
+    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv -j
     # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp -j
     # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=mpi -j
     # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=smp -j
