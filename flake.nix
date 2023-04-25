@@ -3,8 +3,8 @@
 
   nixConfig = {
     extra-experimental-features = "nix-command flakes";
-    # extra-substituters = "https://halide-haskell.cachix.org";
-    # extra-trusted-public-keys = "halide-haskell.cachix.org-1:cFPqtShCsH4aNjn2q4PHb39Omtd/FWRhrkTBcSrtNKQ=";
+    extra-substituters = "https://twesterhout-chapel.cachix.org";
+    extra-trusted-public-keys = "twesterhout-chapel.cachix.org-1:bs5PQPqy21+rP2KJl+O40/eFVzdsTe6m7ZTiOEE7PaI=";
   };
 
   inputs = {
