@@ -20,12 +20,45 @@
     let
       pkgs = import inputs.nixpkgs { inherit system; };
       chapel = pkgs.callPackage ./chapel.nix { };
+      test = pkgs.mkDerivation {
+        src = ./.;
+        dontConfigure = true;
+        buildPhase = ''
+          
+        '';
+
+      };
     in
     {
       packages.default = chapel;
       apps.default = {
         type = "app";
         program = "${chapel}/bin/chpl";
+      };
+      devShells.chapel = pkgs.mkShell {
+        buildInputs = with pkgs; [
+          llvmPackages_14.clang
+          llvmPackages_14.llvm
+          llvmPackages_14.libclang.dev
+        ];
+        nativeBuildInputs = with pkgs; [
+          chapel
+          bash
+          python39
+          gnumake
+          gnum4
+          which
+          pkg-config
+          llvmPackages_14.clang-unwrapped
+          llvmPackages_14.clang-unwrapped.dev
+          llvmPackages_14.clang-unwrapped.lib.lib
+        ];
+        shellHook = ''
+          export CLANG_UNWRAPPED=${pkgs.llvmPackages_14.clang-unwrapped}
+          export CLANG_UNWRAPPED_DEV=${pkgs.llvmPackages_14.clang-unwrapped.dev}
+
+          export EXTRA_FLAGS='-I ${pkgs.llvmPackages_14.bintools.libc.dev}/include -I ${pkgs.llvmPackages_14.clang-unwrapped.lib}/lib/clang/14.0.6/include'
+        '';
       };
       devShells.default = (pkgs.mkShell.override { stdenv = pkgs.llvmPackages_14.stdenv; }) {
         packages = [ chapel ];

@@ -67,9 +67,9 @@ llvmPackages_14.stdenv.mkDerivation {
 
   buildPhase = ''
     make -j
-    for CHPL_COMM_SUBSTRATE in smp mpi udp ibv; do
-      make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=$CHPL_COMM_SUBSTRATE -j
-    done
+    # for CHPL_COMM_SUBSTRATE in smp mpi udp ibv; do
+    #   make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=$CHPL_COMM_SUBSTRATE -j
+    # done
     # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp -j
     # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=mpi -j
     # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=smp -j
@@ -82,24 +82,22 @@ llvmPackages_14.stdenv.mkDerivation {
 
   postInstall = ''
     makeWrapper $out/bin/linux64-x86_64/chpl $out/bin/chpl \
-      --prefix PATH : "${llvmPackages_14.clang}/bin" \
+      --prefix PATH : "${llvmPackages_14.clang-unwrapped}/bin" \
       --prefix PATH : "${pkg-config}/bin" \
       --prefix PATH : "${mpi}/bin" \
       --prefix PATH : "${coreutils}/bin" \
       --prefix PATH : "${gnumake}/bin" \
       --prefix PATH : "${python39}/bin" \
       --prefix PKG_CONFIG_PATH : "${libunwind.dev}/lib/pkgconfig" \
-      --set-default CC "${llvmPackages_14.clang}/bin/clang" \
-      --set-default CXX "${llvmPackages_14.clang}/bin/clang++" \
       --set-default CHPL_HOME $out \
       --set-default CHPL_LLVM system \
       --set-default CHPL_LLVM_CONFIG "${llvmPackages_14.llvm.dev}/bin/llvm-config" \
       --set-default CHPL_HOST_COMPILER llvm \
-      --set-default CHPL_HOST_CC "${llvmPackages_14.clang}/bin/clang" \
-      --set-default CHPL_HOST_CXX "${llvmPackages_14.clang}/bin/clang++" \
+      --set-default CHPL_HOST_CC "${llvmPackages_14.clang-unwrapped}/bin/clang" \
+      --set-default CHPL_HOST_CXX "${llvmPackages_14.clang-unwrapped}/bin/clang++" \
       --set-default CHPL_TARGET_CPU none \
-      --set-default CHPL_TARGET_CC "${llvmPackages_14.clang}/bin/clang" \
-      --set-default CHPL_TARGET_CXX "${llvmPackages_14.clang}/bin/clang++" \
+      --set-default CHPL_TARGET_CC "${llvmPackages_14.clang-unwrapped}/bin/clang" \
+      --set-default CHPL_TARGET_CXX "${llvmPackages_14.clang-unwrapped}/bin/clang++" \
       --set-default CHPL_GMP system \
       --set-default CHPL_RE2 bundled \
       --set-default CHPL_UNWIND system \
