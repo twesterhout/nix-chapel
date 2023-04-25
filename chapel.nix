@@ -1,5 +1,6 @@
 { llvmPackages_14
 , gmp
+, coreutils
 , xz
 , libunwind
 , fetchFromGitHub
@@ -65,7 +66,9 @@ llvmPackages_14.stdenv.mkDerivation {
 
   buildPhase = ''
     make -j
-    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp -j
+    for CHPL_COMM_SUBSTRATE in smp mpi udp ibv; do
+      make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=$CHPL_COMM_SUBSTRATE -j
+    done
     # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp -j
     # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=mpi -j
     # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=smp -j
@@ -81,6 +84,9 @@ llvmPackages_14.stdenv.mkDerivation {
       --prefix PATH : "${llvmPackages_14.clang}/bin" \
       --prefix PATH : "${pkg-config}/bin" \
       --prefix PATH : "${mpi}/bin" \
+      --prefix PATH : "${coreutils}/bin" \
+      --prefix PATH : "${gnumake}/bin" \
+      --prefix PATH : "${python39}/bin" \
       --prefix PKG_CONFIG_PATH : "${libunwind.dev}/lib/pkgconfig" \
       --set-default CHPL_HOME $out \
       --set-default CHPL_LLVM system \
