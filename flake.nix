@@ -54,8 +54,12 @@
           llvmPackages_14.clang-unwrapped.lib.lib
         ];
         shellHook = ''
+          export CLANG=${pkgs.llvmPackages_14.clang}
           export CLANG_UNWRAPPED=${pkgs.llvmPackages_14.clang-unwrapped}
           export CLANG_UNWRAPPED_DEV=${pkgs.llvmPackages_14.clang-unwrapped.dev}
+          export STDENV_PATH=${pkgs.llvmPackages_14.stdenv.cc}
+          export LIBC_PATH=${pkgs.llvmPackages_14.bintools.libc}
+          export LIBC_DEV_PATH=${pkgs.llvmPackages_14.bintools.libc.dev}
 
           export EXTRA_FLAGS='-I ${pkgs.llvmPackages_14.bintools.libc.dev}/include -I ${pkgs.llvmPackages_14.clang-unwrapped.lib}/lib/clang/14.0.6/include'
         '';

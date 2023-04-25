@@ -67,6 +67,11 @@ llvmPackages_14.stdenv.mkDerivation {
 
   buildPhase = ''
     make -j
+    for CHPL_LAUNCHER in gasnetrun_ibv gasnetrun_mpi slurm-gasnetrun_ibv slurm-gasnetrun_mpi slurm-srun; do
+      for CHPL_COMM_SUBSTRATE in ibv; do
+        make CHPL_COMM=gasnet CHPL_LAUNCHER=$CHPL_LAUNCHER CHPL_COMM_SUBSTRATE=$CHPL_COMM_SUBSTRATE -j
+      done
+    done
     # for CHPL_COMM_SUBSTRATE in smp mpi udp ibv; do
     #   make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=$CHPL_COMM_SUBSTRATE -j
     # done
@@ -82,7 +87,6 @@ llvmPackages_14.stdenv.mkDerivation {
 
   postInstall = ''
     makeWrapper $out/bin/linux64-x86_64/chpl $out/bin/chpl \
-      --prefix PATH : "${llvmPackages_14.clang-unwrapped}/bin" \
       --prefix PATH : "${pkg-config}/bin" \
       --prefix PATH : "${mpi}/bin" \
       --prefix PATH : "${coreutils}/bin" \
@@ -93,11 +97,11 @@ llvmPackages_14.stdenv.mkDerivation {
       --set-default CHPL_LLVM system \
       --set-default CHPL_LLVM_CONFIG "${llvmPackages_14.llvm.dev}/bin/llvm-config" \
       --set-default CHPL_HOST_COMPILER llvm \
-      --set-default CHPL_HOST_CC "${llvmPackages_14.clang-unwrapped}/bin/clang" \
-      --set-default CHPL_HOST_CXX "${llvmPackages_14.clang-unwrapped}/bin/clang++" \
+      --set-default CHPL_HOST_CC "${llvmPackages_14.clang}/bin/clang" \
+      --set-default CHPL_HOST_CXX "${llvmPackages_14.clang}/bin/clang++" \
       --set-default CHPL_TARGET_CPU none \
-      --set-default CHPL_TARGET_CC "${llvmPackages_14.clang-unwrapped}/bin/clang" \
-      --set-default CHPL_TARGET_CXX "${llvmPackages_14.clang-unwrapped}/bin/clang++" \
+      --set-default CHPL_TARGET_CC "${llvmPackages_14.clang}/bin/clang" \
+      --set-default CHPL_TARGET_CXX "${llvmPackages_14.clang}/bin/clang++" \
       --set-default CHPL_GMP system \
       --set-default CHPL_RE2 bundled \
       --set-default CHPL_UNWIND system \
