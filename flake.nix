@@ -19,6 +19,7 @@
   outputs = inputs: inputs.flake-utils.lib.eachDefaultSystem (system:
     let
       pkgs = import inputs.nixpkgs { inherit system; };
+      mpi = pkgs.mpi.override { withCuda = true; };
       chapel = pkgs.callPackage ./chapel.nix { };
       test = pkgs.mkDerivation {
         src = ./.;

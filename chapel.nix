@@ -67,11 +67,17 @@ llvmPackages_14.stdenv.mkDerivation {
 
   buildPhase = ''
     make -j
-    for CHPL_LAUNCHER in gasnetrun_ibv gasnetrun_mpi slurm-gasnetrun_ibv slurm-gasnetrun_mpi slurm-srun; do
-      for CHPL_COMM_SUBSTRATE in ibv; do
-        make CHPL_COMM=gasnet CHPL_LAUNCHER=$CHPL_LAUNCHER CHPL_COMM_SUBSTRATE=$CHPL_COMM_SUBSTRATE -j
-      done
-    done
+    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=smp -j
+    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp -j
+    make CHPL_COMM=gasnet CHPL_LAUNCHER=gasnetrun_mpi CHPL_COMM_SUBSTRATE=mpi -j
+    make CHPL_COMM=gasnet CHPL_LAUNCHER=slurm-gasnetrun_mpi CHPL_COMM_SUBSTRATE=mpi -j
+    make CHPL_COMM=gasnet CHPL_LAUNCHER=slurm-srun CHPL_COMM_SUBSTRATE=mpi -j
+    make CHPL_COMM=gasnet CHPL_LAUNCHER=none CHPL_COMM_SUBSTRATE=mpi -j
+    # for CHPL_LAUNCHER in gasnetrun_ibv gasnetrun_mpi slurm-gasnetrun_ibv slurm-gasnetrun_mpi slurm-srun none; do
+    #   for CHPL_COMM_SUBSTRATE in smp mpi udp ibv; do
+    #     make CHPL_COMM=gasnet CHPL_LAUNCHER=$CHPL_LAUNCHER CHPL_COMM_SUBSTRATE=$CHPL_COMM_SUBSTRATE -j
+    #   done
+    # done
     # for CHPL_COMM_SUBSTRATE in smp mpi udp ibv; do
     #   make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=$CHPL_COMM_SUBSTRATE -j
     # done
