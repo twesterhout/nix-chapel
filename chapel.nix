@@ -1,5 +1,6 @@
 { llvmPackages_14
 , gmp
+, gcc-unwrapped
 , coreutils
 , xz
 , libunwind
@@ -47,8 +48,8 @@ llvmPackages_14.stdenv.mkDerivation {
     patchShebangs --build util/config/compileline
     patchShebangs --build util/test/checkChplInstall
 
-    export CC=${llvmPackages_14.stdenv.cc}/bin/cc
-    export CXX=${llvmPackages_14.stdenv.cc}/bin/c++
+    export CC=${llvmPackages_14.clang}/bin/cc
+    export CXX=${llvmPackages_14.clang}/bin/c++
     export CHPL_LLVM=system
     export CHPL_LLVM_CONFIG=${llvmPackages_14.llvm.dev}/bin/llvm-config
     export CHPL_HOST_COMPILER=llvm
@@ -88,6 +89,8 @@ llvmPackages_14.stdenv.mkDerivation {
       --prefix PATH : "${gnumake}/bin" \
       --prefix PATH : "${python39}/bin" \
       --prefix PKG_CONFIG_PATH : "${libunwind.dev}/lib/pkgconfig" \
+      --set-default CC "${llvmPackages_14.clang}/bin/clang" \
+      --set-default CXX "${llvmPackages_14.clang}/bin/clang++" \
       --set-default CHPL_HOME $out \
       --set-default CHPL_LLVM system \
       --set-default CHPL_LLVM_CONFIG "${llvmPackages_14.llvm.dev}/bin/llvm-config" \
