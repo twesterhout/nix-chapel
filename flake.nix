@@ -21,17 +21,32 @@
       pkgs = import inputs.nixpkgs { inherit system; };
       mpi = pkgs.mpi.override { withCuda = true; };
       chapel = pkgs.callPackage ./chapel.nix { };
-      test = pkgs.mkDerivation {
-        src = ./.;
-        dontConfigure = true;
-        buildPhase = ''
-          
-        '';
-
+      chapel-hello = pkgs.stdenv.mkDerivation {
+        name = "hello6-taskpar-dist";
+	version = "1.0.0";
+	src = ./.;
+	dontConfigure = true;
+	nativeBuildInputs = [ chapel ];
+	buildPhase = ''
+          chpl hello6-taskpar-dist.chpl
+	'';
+	installPhase = ''
+	  mkdir -p $out/bin
+	  cp -v hello6-taskpar-dist $out/bin
+	  if [ -f hello6-taskpar-dist_real ]; then
+	    cp -v hello6-taskpar-dist_real $out/bin
+	  fi
+	'';
+      };
+      hello = pkgs.singularity-tools.buildImage {
+        name = "hello";
+        contents = [ chapel-hello ];
+	runScript = "${chapel-hello}/bin/hello6-taskpar-dist";
       };
     in
     {
       packages.default = chapel;
+      packages.singularity = hello;
       apps.default = {
         type = "app";
         program = "${chapel}/bin/chpl";
