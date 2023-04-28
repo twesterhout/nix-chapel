@@ -28,7 +28,7 @@
 	dontConfigure = true;
 	nativeBuildInputs = [ chapel ];
 	buildPhase = ''
-          chpl hello6-taskpar-dist.chpl
+          CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp chpl hello6-taskpar-dist.chpl
 	'';
 	installPhase = ''
 	  mkdir -p $out/bin
@@ -40,8 +40,10 @@
       };
       hello = pkgs.singularity-tools.buildImage {
         name = "hello";
-        contents = [ chapel-hello ];
-	runScript = "${chapel-hello}/bin/hello6-taskpar-dist";
+        contents = [ chapel-hello pkgs.openssh ];
+        # runScript = "${chapel-hello}/bin/hello6-taskpar-dist";
+	diskSize = 10240;
+	memSize = 5120;
       };
     in
     {
