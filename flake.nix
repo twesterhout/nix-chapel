@@ -19,36 +19,55 @@
   outputs = inputs: inputs.flake-utils.lib.eachDefaultSystem (system:
     let
       pkgs = import inputs.nixpkgs { inherit system; };
-      mpi = pkgs.mpi.override { withCuda = true; };
       chapel = pkgs.callPackage ./chapel.nix { };
-      chapel-hello = pkgs.stdenv.mkDerivation {
-        name = "hello6-taskpar-dist";
-	version = "1.0.0";
-	src = ./.;
-	dontConfigure = true;
-	nativeBuildInputs = [ chapel ];
-	buildPhase = ''
-          CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp chpl hello6-taskpar-dist.chpl
-	'';
-	installPhase = ''
-	  mkdir -p $out/bin
-	  cp -v hello6-taskpar-dist $out/bin
-	  if [ -f hello6-taskpar-dist_real ]; then
-	    cp -v hello6-taskpar-dist_real $out/bin
-	  fi
-	'';
+      hello-chapel = pkgs.stdenv.mkDerivation {
+        name = "hello-chapel";
+        version = "1.0.0";
+        src = ./.;
+        dontConfigure = true;
+        nativeBuildInputs = [ chapel ];
+        buildPhase = ''
+          chpl hello6-taskpar-dist.chpl
+        '';
+        installPhase = ''
+          mkdir -p $out/bin
+          cp -v hello6-taskpar-dist $out/bin/
+        '';
       };
-      hello = pkgs.singularity-tools.buildImage {
-        name = "hello";
-        contents = [ chapel-hello pkgs.openssh ];
-        # runScript = "${chapel-hello}/bin/hello6-taskpar-dist";
-	diskSize = 10240;
-	memSize = 5120;
+      hello-shell = pkgs.mkShell {
+        buildInputs = [ ];
+        nativeBuildInputs = with pkgs; [
+          hello
+          hello-chapel
+          bash
+          coreutils
+          binutils
+        ];
+      };
+      hello-docker = pkgs.dockerTools.buildNixShellImage {
+        name = "pre-sif-container";
+        tag = "latest";
+        drv = hello-shell;
+      };
+      hello-singularity = pkgs.stdenv.mkDerivation {
+        name = "container.sif";
+        src = ./.;
+        installPhase = '' 
+          mkdir unpack
+          echo "${hello-docker}"
+          tar xzvf ${hello-docker} -C unpack
+          # Singularity can't handle .gz
+          tar -C unpack/ -cvf layer.tar .
+          # TODO: Allow for module of user defined nightly, opposed to using src
+          singularity build --fakeroot $out Singularity.nightly
+        '';
+        nativeBuildInputs = [ pkgs.singularity ];
       };
     in
     {
       packages.default = chapel;
-      packages.singularity = hello;
+      packages.docker = hello-docker;
+      packages.singularity = hello-singularity;
       apps.default = {
         type = "app";
         program = "${chapel}/bin/chpl";
