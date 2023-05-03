@@ -27,11 +27,14 @@
         dontConfigure = true;
         nativeBuildInputs = [ chapel ];
         buildPhase = ''
-          chpl hello6-taskpar-dist.chpl
+          CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=mpi CHPL_LAUNCHER=none chpl hello6-taskpar-dist.chpl
         '';
         installPhase = ''
           mkdir -p $out/bin
           cp -v hello6-taskpar-dist $out/bin/
+          if [ -f hello6-taskpar-dist_real ]; then
+            cp -v hello6-taskpar-dist_real $out/bin/
+          fi
         '';
       };
       hello-shell = pkgs.mkShell {
@@ -44,30 +47,49 @@
           binutils
         ];
       };
-      hello-docker = pkgs.dockerTools.buildNixShellImage {
+      hello-docker = pkgs.dockerTools.buildImage {
         name = "pre-sif-container";
         tag = "latest";
-        drv = hello-shell;
+        config = {
+          Cmd = [ "${hello-chapel}/bin/hello6-taskpar-dist" "-v" "--numLocales=2" ];
+        };
       };
-      hello-singularity = pkgs.stdenv.mkDerivation {
-        name = "container.sif";
-        src = ./.;
-        installPhase = '' 
-          mkdir unpack
-          echo "${hello-docker}"
-          tar xzvf ${hello-docker} -C unpack
-          # Singularity can't handle .gz
-          tar -C unpack/ -cvf layer.tar .
-          # TODO: Allow for module of user defined nightly, opposed to using src
-          singularity build --fakeroot $out Singularity.nightly
+      # hello-docker = pkgs.dockerTools.buildNixShellImage {
+      #   name = "pre-sif-container";
+      #   tag = "latest";
+      #   drv = hello-shell;
+      # };
+      hello-singularity = pkgs.singularity-tools.buildImage {
+        name = "hello-singularity";
+        contents = with pkgs; [ coreutils binutils hello-chapel ];
+        runScript = ''
+          #!${pkgs.stdenv.shell}
+
+          export PATH=${hello-chapel}/bin:${pkgs.binutils}/bin:${pkgs.coreutils}/bin:$PATH
+          exec /bin/sh
         '';
-        nativeBuildInputs = [ pkgs.singularity ];
+        diskSize = 10240;
       };
+      # hello-singularity = pkgs.stdenv.mkDerivation {
+      #   name = "container.sif";
+      #   src = ./.;
+      #   installPhase = '' 
+      #     mkdir unpack
+      #     echo "${hello-docker}"
+      #     tar xzvf ${hello-docker} -C unpack
+      #     # Singularity can't handle .gz
+      #     tar -C unpack/ -cvf layer.tar .
+      #     # TODO: Allow for module of user defined nightly, opposed to using src
+      #     singularity build --fakeroot $out Singularity.nightly
+      #   '';
+      #   nativeBuildInputs = [ pkgs.singularity ];
+      # };
     in
     {
       packages.default = chapel;
+      packages.hello-chapel = hello-chapel;
       packages.docker = hello-docker;
-      packages.singularity = hello-singularity;
+      packages.hello-singularity = hello-singularity;
       apps.default = {
         type = "app";
         program = "${chapel}/bin/chpl";
