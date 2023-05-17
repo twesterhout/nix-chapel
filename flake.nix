@@ -27,7 +27,7 @@
         dontConfigure = true;
         nativeBuildInputs = [ chapel ];
         buildPhase = ''
-          CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=mpi CHPL_LAUNCHER=none chpl hello6-taskpar-dist.chpl
+          CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=none chpl hello6-taskpar-dist.chpl
         '';
         installPhase = ''
           mkdir -p $out/bin
@@ -69,6 +69,7 @@
           exec /bin/sh
         '';
         diskSize = 10240;
+        memSize = 5120;
       };
       # hello-singularity = pkgs.stdenv.mkDerivation {
       #   name = "container.sif";

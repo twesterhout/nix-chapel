@@ -22,18 +22,18 @@ llvmPackages_14.stdenv.mkDerivation {
   pname = "chapel";
   version = "1.30.0";
 
-  src = fetchFromGitHub {
-    owner = "bradcray";
-    repo = "chapel";
-    rev = "build-amudprun-host-with-host-cc";
-    sha256 = "sha256-6Ijg8vfeozxCrEp9ZyWg9lf5bdB8+DDNBQTQU126VJ8=";
-  };
   # src = fetchFromGitHub {
-  #   owner = "chapel-lang";
+  #   owner = "bradcray";
   #   repo = "chapel";
-  #   rev = "a5d4cf00ac813be8e77203bcdd76aea7bddff940";
-  #   sha256 = "sha256-uh2HFx8R8/fIWwaKOnkpLza+Q+AaXoBNnVPaVblZ7oM=";
+  #   rev = "build-amudprun-host-with-host-cc";
+  #   sha256 = "sha256-6Ijg8vfeozxCrEp9ZyWg9lf5bdB8+DDNBQTQU126VJ8=";
   # };
+  src = fetchFromGitHub {
+    owner = "chapel-lang";
+    repo = "chapel";
+    rev = "1ec5aa5cd391e2c94f67b49577e5f532001223a2";
+    sha256 = "sha256-fPYEdLaI34L95vxPo321NLpItso1UaHYUyJvQyx+IBw=";
+  };
 
   patches = [ ./llvm-and-clang-paths.patch ];
   postPatch = ''
@@ -69,10 +69,13 @@ llvmPackages_14.stdenv.mkDerivation {
     make -j
     make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=smp -j
     make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp -j
-    make CHPL_COMM=gasnet CHPL_LAUNCHER=gasnetrun_mpi CHPL_COMM_SUBSTRATE=mpi -j
-    make CHPL_COMM=gasnet CHPL_LAUNCHER=slurm-gasnetrun_mpi CHPL_COMM_SUBSTRATE=mpi -j
-    make CHPL_COMM=gasnet CHPL_LAUNCHER=slurm-srun CHPL_COMM_SUBSTRATE=mpi -j
-    make CHPL_COMM=gasnet CHPL_LAUNCHER=none CHPL_COMM_SUBSTRATE=mpi -j
+    # make CHPL_COMM=gasnet CHPL_LAUNCHER=gasnetrun_mpi CHPL_COMM_SUBSTRATE=mpi -j
+    # make CHPL_COMM=gasnet CHPL_LAUNCHER=slurm-gasnetrun_mpi CHPL_COMM_SUBSTRATE=mpi -j
+    # make CHPL_COMM=gasnet CHPL_LAUNCHER=slurm-srun CHPL_COMM_SUBSTRATE=mpi -j
+    # make CHPL_COMM=gasnet CHPL_LAUNCHER=none CHPL_COMM_SUBSTRATE=mpi -j
+    make CHPL_COMM=gasnet CHPL_LAUNCHER=gasnetrun_ibv CHPL_COMM_SUBSTRATE=ibv -j
+    make CHPL_COMM=gasnet CHPL_LAUNCHER=slurm-gasnetrun_ibv CHPL_COMM_SUBSTRATE=ibv -j
+    make CHPL_COMM=gasnet CHPL_LAUNCHER=none CHPL_COMM_SUBSTRATE=ibv -j
     # for CHPL_LAUNCHER in gasnetrun_ibv gasnetrun_mpi slurm-gasnetrun_ibv slurm-gasnetrun_mpi slurm-srun none; do
     #   for CHPL_COMM_SUBSTRATE in smp mpi udp ibv; do
     #     make CHPL_COMM=gasnet CHPL_LAUNCHER=$CHPL_LAUNCHER CHPL_COMM_SUBSTRATE=$CHPL_COMM_SUBSTRATE -j
@@ -92,9 +95,9 @@ llvmPackages_14.stdenv.mkDerivation {
   '';
 
   postInstall = ''
+    # --prefix PATH : "${mpi}/bin"
     makeWrapper $out/bin/linux64-x86_64/chpl $out/bin/chpl \
       --prefix PATH : "${pkg-config}/bin" \
-      --prefix PATH : "${mpi}/bin" \
       --prefix PATH : "${coreutils}/bin" \
       --prefix PATH : "${gnumake}/bin" \
       --prefix PATH : "${python39}/bin" \
@@ -152,7 +155,7 @@ llvmPackages_14.stdenv.mkDerivation {
     llvmPackages_14.libclang.dev
     libunwind
     gmp
-    mpi
+    # mpi
     rdma-core
   ];
 
