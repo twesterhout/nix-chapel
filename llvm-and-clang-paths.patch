@@ -1,13 +1,3 @@
-diff --git a/configure b/configure
-index a54e1de985..05b6a91684 100755
---- a/configure
-+++ b/configure
-@@ -1,4 +1,4 @@
--#!/bin/bash
-+#!/nix/store/k32c6vzr9g1nln6v0gypz6ar6lqjb63l-bash-5.2-p15/bin/bash
- 
- 
- if [ ! -d util ]
 diff --git a/util/chplenv/chpl_llvm.py b/util/chplenv/chpl_llvm.py
 index 5c645fdc05..6c27fef3fe 100755
 --- a/util/chplenv/chpl_llvm.py
@@ -117,33 +107,3 @@ index 5c645fdc05..6c27fef3fe 100755
  
  # lang should be C or CXX
  # returns [] list with the first element the clang command,
-diff --git a/util/config/compileline b/util/config/compileline
-index 96d47624d6..a67e896a30 100755
---- a/util/config/compileline
-+++ b/util/config/compileline
-@@ -1,4 +1,4 @@
--#!/usr/bin/env sh
-+#!/nix/store/k32c6vzr9g1nln6v0gypz6ar6lqjb63l-bash-5.2-p15/bin/sh
- 
- # get the chpl home directory
- CWD=$(cd $(dirname $0) ; cd ..; cd ..; pwd)
-diff --git a/util/printchplenv b/util/printchplenv
-index e2fa398203..95f3ce035e 100755
---- a/util/printchplenv
-+++ b/util/printchplenv
-@@ -1,4 +1,4 @@
--#!/usr/bin/env sh
-+#!/nix/store/k32c6vzr9g1nln6v0gypz6ar6lqjb63l-bash-5.2-p15/bin/sh
- 
- # Bash wrapper for printchplenv.py. In order to make relative imports easier we
- # want the real printchplenv.py to live in the chplenv dir. This wrapper just
-diff --git a/util/test/checkChplInstall b/util/test/checkChplInstall
-index 7d2eb78a88..e3d536237a 100755
---- a/util/test/checkChplInstall
-+++ b/util/test/checkChplInstall
-@@ -1,4 +1,4 @@
--#!/usr/bin/env bash
-+#!/nix/store/k32c6vzr9g1nln6v0gypz6ar6lqjb63l-bash-5.2-p15/bin/bash
- 
- # Validate Chapel installation by compiling and executing an example job.
- #

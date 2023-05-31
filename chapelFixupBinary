@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -e
+
+replaceReferencesWith() {
+	sed -i "s:$2:$3:g" "$1"
+}
+
+hideReferencesTo() {
+	declare -r filepath=$1
+	declare -r original=$2
+	declare -r new=$(echo "$original" | sed -E 's:/nix/store/[a-z0-9]{32}-:/nix/store/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-:')
+	replaceReferencesWith "$filepath" "$original" "$new"
+}
+
+if [ $# -ne 1 ]; then
+	echo "Expected a single argument -- binary to fixup"
+	exit 1
+fi
+
+binaryFile=$1
+hideReferencesTo "$binaryFile" @clang@
+hideReferencesTo "$binaryFile" @clang_lib@
+hideReferencesTo "$binaryFile" @llvm_dev@
+hideReferencesTo "$binaryFile" @libc_dev@
+replaceReferencesWith "$binaryFile" "@chapel@/third-party/" "@chapel_third_party@/"
+hideReferencesTo "$binaryFile" "@chapel@"
