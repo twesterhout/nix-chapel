@@ -10,6 +10,7 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    nix-filter.url = "github:numtide/nix-filter";
     flake-compat = {
       url = "github:edolstra/flake-compat";
       flake = false;
@@ -52,7 +53,10 @@
       hello-chapel = pkgs.stdenv.mkDerivation {
         name = "hello-chapel";
         version = "1.0.0";
-        src = ./.;
+        src = inputs.nix-filter.lib {
+          root = ./.;
+          include = [ (inputs.nix-filter.lib.matchExt "chpl") ];
+        };
         dontConfigure = true;
         nativeBuildInputs = [ chapel chapelFixupBinary pkgs.coreutils ];
         # disallowedReferences = [ pkgs.llvmPackages_14.clang ];
@@ -67,12 +71,13 @@
       };
 
       hello-docker = pkgs.dockerTools.buildImage {
-        name = "pre-sif-container";
+        name = "hello-docker";
         tag = "latest";
         config = {
-          Cmd = [ "${hello-chapel}/bin/hello6-taskpar-dist" "-v" "--numLocales=2" ];
+          Entrypoint = [ "${hello-chapel}/bin/hello6-taskpar-dist" ];
         };
       };
+
       hello-singularity = pkgs.singularity-tools.buildImage {
         name = "hello-singularity";
         contents = [ hello-chapel ];
@@ -88,6 +93,8 @@
     in
     {
       packages.default = chapel;
+      packages.chapel = chapel;
+      packages.chapelFixupBinary = chapelFixupBinary;
       packages.hello-chapel = hello-chapel;
       packages.hello-docker = hello-docker;
       packages.hello-singularity = hello-singularity;
@@ -95,6 +102,7 @@
         type = "app";
         program = "${chapel}/bin/chpl";
       };
+
       devShells.default = (pkgs.mkShell.override { stdenv = pkgs.llvmPackages_14.stdenv; }) {
         packages = [ chapel ];
         buildInputs = with pkgs; [

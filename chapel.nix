@@ -3,7 +3,6 @@
 , coreutils
 , fetchFromGitHub
 , file
-, gcc-unwrapped
 , gmp
 , gnumake
 , gnum4
@@ -20,7 +19,7 @@
 , xz
 }:
 
-llvmPackages_14.stdenv.mkDerivation rec {
+llvmPackages_14.stdenv.mkDerivation {
   pname = "chapel";
   version = "1.31.0";
 
@@ -61,7 +60,7 @@ llvmPackages_14.stdenv.mkDerivation rec {
   '';
 
   buildPhase = ''
-    # make -j
+    make -j
     for CHPL_LIB_PIC in none pic; do
       make CHPL_LIB_PIC=$CHPL_LIB_PIC -j
     done
