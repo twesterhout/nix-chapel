@@ -74,14 +74,14 @@
         name = "hello-docker";
         tag = "latest";
         config = {
-          Entrypoint = [ "${hello-chapel}/bin/hello6-taskpar-dist" ];
+          Entrypoint = [ "${hello-chapel}/bin/hello" ];
         };
       };
 
       hello-singularity = pkgs.singularity-tools.buildImage {
         name = "hello-singularity";
         contents = [ hello-chapel ];
-        runScript = "${hello-chapel}/bin/hello6-taskpar-dist";
+        runScript = "${hello-chapel}/bin/hello";
         diskSize = 10240;
         memSize = 5120;
       };
