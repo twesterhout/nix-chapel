@@ -67,9 +67,9 @@ llvmPackages_14.stdenv.mkDerivation {
     make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=smp -j
     make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp -j
     make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp CHPL_LAUNCHER=none -j
-    for CHPL_LAUNCHER in none gasnetrun_mpi slurm-gasnetrun_mpi slurm-srun; do
-      make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=mpi CHPL_LAUNCHER=$CHPL_LAUNCHER -j
-    done
+    # for CHPL_LAUNCHER in none gasnetrun_mpi slurm-gasnetrun_mpi slurm-srun; do
+    #   make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=mpi CHPL_LAUNCHER=$CHPL_LAUNCHER -j
+    # done
     for CHPL_LAUNCHER in none gasnetrun_ibv slurm-gasnetrun_ibv; do
       make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=$CHPL_LAUNCHER -j
     done
@@ -133,7 +133,7 @@ llvmPackages_14.stdenv.mkDerivation {
     llvmPackages_14.libclang.dev
     libunwind
     gmp
-    mpi
+    # mpi
     pmix
     rdma-core
   ];

@@ -46,7 +46,10 @@
         hideReferencesTo "$binaryFile" ${llvmPackages_14.clang-unwrapped.lib}
         hideReferencesTo "$binaryFile" ${llvmPackages_14.llvm.dev}
         hideReferencesTo "$binaryFile" ${llvmPackages_14.bintools.libc.dev}
-        replaceReferencesWith "$binaryFile" ${chapel}/third-party/ ${chapel.third_party}/
+        if ! strings $binaryFile | grep -q -E 'CHPL_LAUNCHER:\s+none'; then
+          echo 'Replacing references to $CHPL_HOME/third-party ...'
+          replaceReferencesWith "$binaryFile" ${chapel}/third-party/ ${chapel.third_party}/
+        fi
         hideReferencesTo "$binaryFile" ${chapel}
       '';
 
@@ -61,7 +64,7 @@
         nativeBuildInputs = [ chapel chapelFixupBinary pkgs.coreutils ];
         # disallowedReferences = [ pkgs.llvmPackages_14.clang ];
         buildPhase = ''
-          chpl --print-commands --devel hello6-taskpar-dist.chpl
+          CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=none chpl --print-commands --devel hello6-taskpar-dist.chpl
           chapelFixupBinary hello6-taskpar-dist
         '';
         installPhase = ''
@@ -81,12 +84,7 @@
       hello-singularity = pkgs.singularity-tools.buildImage {
         name = "hello-singularity";
         contents = [ hello-chapel ];
-        runScript = ''
-          #!${pkgs.stdenv.shell}
-
-          export PATH=${hello-chapel}/bin:$PATH
-          exec /bin/sh
-        '';
+        runScript = "${hello-chapel}/bin/hello6-taskpar-dist";
         diskSize = 10240;
         memSize = 5120;
       };
