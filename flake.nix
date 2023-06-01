@@ -56,20 +56,17 @@
       hello-chapel = pkgs.stdenv.mkDerivation {
         name = "hello-chapel";
         version = "1.0.0";
-        src = inputs.nix-filter.lib {
-          root = ./.;
-          include = [ (inputs.nix-filter.lib.matchExt "chpl") ];
-        };
+        src = ./src;
         dontConfigure = true;
         nativeBuildInputs = [ chapel chapelFixupBinary pkgs.coreutils ];
         # disallowedReferences = [ pkgs.llvmPackages_14.clang ];
         buildPhase = ''
-          CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=none chpl --print-commands --devel hello6-taskpar-dist.chpl
-          chapelFixupBinary hello6-taskpar-dist
+          CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=none chpl --print-commands --devel -o hello hello6-taskpar-dist.chpl
+          chapelFixupBinary hello
         '';
         installPhase = ''
           mkdir -p $out/bin
-          cp -v hello6-taskpar-dist $out/bin/
+          cp -v hello $out/bin/
         '';
       };
 
