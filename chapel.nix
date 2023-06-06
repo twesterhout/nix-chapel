@@ -73,6 +73,7 @@ llvmPackages_14.stdenv.mkDerivation rec {
     patchShebangs --build util/printchplenv
     patchShebangs --build util/config/compileline
     patchShebangs --build util/test/checkChplInstall
+    patchShebangs --build tools/c2chapel/c2chapel.py
 
     # In the following we set up all the dependencies for c2chapel such that
     # Chapel doesn't try (and doesn't need to) create Python virtual environments
