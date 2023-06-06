@@ -61,7 +61,9 @@
         nativeBuildInputs = [ chapel chapelFixupBinary pkgs.coreutils ];
         # disallowedReferences = [ pkgs.llvmPackages_14.clang ];
         buildPhase = ''
-          CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=none chpl --print-commands --devel -o hello hello6-taskpar-dist.chpl
+          # CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=none chpl --print-commands --devel -o hello hello6-taskpar-dist.chpl
+          CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=none chpl --fast -o hello hello6-taskpar-dist.chpl
+          # chpl --fast -o hello hello6-taskpar-dist.chpl
           chapelFixupBinary hello
         '';
         installPhase = ''
