@@ -96,6 +96,10 @@ llvmPackages_14.stdenv.mkDerivation rec {
       --replace 'c2chapel: c2chapel-venv $(FAKES)' 'c2chapel:'
     popd
 
+    # Fix a bug in the HDF5 module
+    substituteInPlace modules/packages/HDF5Helper/hdf5_helper.h \
+      --replace '(unsigned long long*)dims' '(hsize_t*)dims'
+
     # substituteInPlace compiler/llvm/clangUtil.cpp \
     #   --replace 'mysystem(cmd.c_str(), "Compile C File");' \
     #             'fprintf(stderr, "clangCC = %s; clangCXX = %s\n", clangCC.c_str(), clangCXX.c_str()); mysystem(cmd.c_str(), "Compile C File");' \
