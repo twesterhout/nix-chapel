@@ -95,6 +95,13 @@ llvmPackages_14.stdenv.mkDerivation rec {
     substituteInPlace Makefile \
       --replace 'c2chapel: c2chapel-venv $(FAKES)' 'c2chapel:'
     popd
+
+    # substituteInPlace compiler/llvm/clangUtil.cpp \
+    #   --replace 'mysystem(cmd.c_str(), "Compile C File");' \
+    #             'fprintf(stderr, "clangCC = %s; clangCXX = %s\n", clangCC.c_str(), clangCXX.c_str()); mysystem(cmd.c_str(), "Compile C File");' \
+    #   --replace '  useLinkCXX = CHPL_TARGET_LD;' \
+    #             '  useLinkCXX = CHPL_TARGET_LD;
+    #              fprintf(stderr, "clangCC = %s; clangCXX = %s, useLinkCXX = %s\n", clangCC.c_str(), clangCXX.c_str(), useLinkCXX.c_str());'
   '';
 
   configurePhase = ''
@@ -154,6 +161,7 @@ llvmPackages_14.stdenv.mkDerivation rec {
       --prefix PATH : "${gnumake}/bin" \
       --prefix PATH : "${mpi}/bin" \
       --prefix PATH : "${python3}/bin" \
+      --prefix PATH : "${llvmPackages_14.clang}/bin" \
       --prefix PKG_CONFIG_PATH : "${libunwind.dev}/lib/pkgconfig" \
       --set-default CHPL_HOME $out \
       --set-default CHPL_LLVM system \
