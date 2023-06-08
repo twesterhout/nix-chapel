@@ -7,7 +7,7 @@
 , gnumake
 , gnum4
 , libunwind
-, llvmPackages_14
+, llvmPackages_15
 , makeWrapper
 , mpi
 , perl
@@ -47,7 +47,7 @@ let
     ];
   };
 in
-llvmPackages_14.stdenv.mkDerivation rec {
+llvmPackages_15.stdenv.mkDerivation rec {
   pname = "chapel";
   version = "1.31.0";
 
@@ -109,16 +109,16 @@ llvmPackages_14.stdenv.mkDerivation rec {
   '';
 
   configurePhase = ''
-    export CC=${llvmPackages_14.clang}/bin/cc
-    export CXX=${llvmPackages_14.clang}/bin/c++
+    export CC=${llvmPackages_15.clang}/bin/cc
+    export CXX=${llvmPackages_15.clang}/bin/c++
     export CHPL_LLVM=system
-    export CHPL_LLVM_CONFIG=${llvmPackages_14.llvm.dev}/bin/llvm-config
+    export CHPL_LLVM_CONFIG=${llvmPackages_15.llvm.dev}/bin/llvm-config
     export CHPL_HOST_COMPILER=llvm
-    export CHPL_HOST_CC=${llvmPackages_14.clang}/bin/clang
-    export CHPL_HOST_CXX=${llvmPackages_14.clang}/bin/clang++
+    export CHPL_HOST_CC=${llvmPackages_15.clang}/bin/clang
+    export CHPL_HOST_CXX=${llvmPackages_15.clang}/bin/clang++
     export CHPL_TARGET_CPU=none
-    export CHPL_TARGET_CC=${llvmPackages_14.clang}/bin/clang
-    export CHPL_TARGET_CXX=${llvmPackages_14.clang}/bin/clang++
+    export CHPL_TARGET_CC=${llvmPackages_15.clang}/bin/clang
+    export CHPL_TARGET_CXX=${llvmPackages_15.clang}/bin/clang++
     export CHPL_GMP=system
     export CHPL_RE2=bundled
     export CHPL_UNWIND=system
@@ -165,22 +165,22 @@ llvmPackages_14.stdenv.mkDerivation rec {
       --prefix PATH : "${gnumake}/bin" \
       --prefix PATH : "${mpi}/bin" \
       --prefix PATH : "${python3}/bin" \
-      --prefix PATH : "${llvmPackages_14.clang}/bin" \
+      --prefix PATH : "${llvmPackages_15.clang}/bin" \
       --prefix PKG_CONFIG_PATH : "${libunwind.dev}/lib/pkgconfig" \
       --set-default CHPL_HOME $out \
       --set-default CHPL_LLVM system \
-      --set-default CHPL_LLVM_CONFIG "${llvmPackages_14.llvm.dev}/bin/llvm-config" \
+      --set-default CHPL_LLVM_CONFIG "${llvmPackages_15.llvm.dev}/bin/llvm-config" \
       --set-default CHPL_HOST_COMPILER llvm \
-      --set-default CHPL_HOST_CC "${llvmPackages_14.clang}/bin/clang" \
-      --set-default CHPL_HOST_CXX "${llvmPackages_14.clang}/bin/clang++" \
+      --set-default CHPL_HOST_CC "${llvmPackages_15.clang}/bin/clang" \
+      --set-default CHPL_HOST_CXX "${llvmPackages_15.clang}/bin/clang++" \
       --set-default CHPL_TARGET_CPU none \
-      --set-default CHPL_TARGET_CC "${llvmPackages_14.clang}/bin/clang" \
-      --set-default CHPL_TARGET_CXX "${llvmPackages_14.clang}/bin/clang++" \
+      --set-default CHPL_TARGET_CC "${llvmPackages_15.clang}/bin/clang" \
+      --set-default CHPL_TARGET_CXX "${llvmPackages_15.clang}/bin/clang++" \
       --set-default CHPL_GMP system \
       --set-default CHPL_RE2 bundled \
       --set-default CHPL_UNWIND system \
-      --add-flags "-I ${llvmPackages_14.bintools.libc.dev}/include" \
-      --add-flags "-I ${llvmPackages_14.clang-unwrapped.lib}/lib/clang/14.0.6/include" \
+      --add-flags "-I ${llvmPackages_15.bintools.libc.dev}/include" \
+      --add-flags "-I ${llvmPackages_15.clang-unwrapped.lib}/lib/clang/14.0.6/include" \
       --add-flags "-L ${gmp}/lib" \
       --add-flags "-L ${xz.out}/lib"
 
@@ -190,13 +190,13 @@ llvmPackages_14.stdenv.mkDerivation rec {
       --prefix PATH : "${which}/bin" \
       --prefix PKG_CONFIG_PATH : "${libunwind.dev}/lib/pkgconfig" \
       --set-default CHPL_LLVM system \
-      --set-default CHPL_LLVM_CONFIG "${llvmPackages_14.llvm.dev}/bin/llvm-config" \
+      --set-default CHPL_LLVM_CONFIG "${llvmPackages_15.llvm.dev}/bin/llvm-config" \
       --set-default CHPL_HOST_COMPILER llvm \
-      --set-default CHPL_HOST_CC "${llvmPackages_14.clang}/bin/clang" \
-      --set-default CHPL_HOST_CXX "${llvmPackages_14.clang}/bin/clang++" \
+      --set-default CHPL_HOST_CC "${llvmPackages_15.clang}/bin/clang" \
+      --set-default CHPL_HOST_CXX "${llvmPackages_15.clang}/bin/clang++" \
       --set-default CHPL_TARGET_CPU none \
-      --set-default CHPL_TARGET_CC "${llvmPackages_14.clang}/bin/clang" \
-      --set-default CHPL_TARGET_CXX "${llvmPackages_14.clang}/bin/clang++" \
+      --set-default CHPL_TARGET_CC "${llvmPackages_15.clang}/bin/clang" \
+      --set-default CHPL_TARGET_CXX "${llvmPackages_15.clang}/bin/clang++" \
       --set-default CHPL_GMP system \
       --set-default CHPL_RE2 bundled \
       --set-default CHPL_UNWIND system
@@ -205,9 +205,9 @@ llvmPackages_14.stdenv.mkDerivation rec {
   '';
 
   buildInputs = [
-    llvmPackages_14.clang
-    llvmPackages_14.llvm
-    llvmPackages_14.libclang.dev
+    llvmPackages_15.clang
+    llvmPackages_15.llvm
+    llvmPackages_15.libclang.dev
     libunwind
     gmp
     # mpi
@@ -221,7 +221,7 @@ llvmPackages_14.stdenv.mkDerivation rec {
     gnumake
     gnum4
     file
-    llvmPackages_14.clang
+    llvmPackages_15.clang
     makeWrapper
     perl
     pkg-config
