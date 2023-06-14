@@ -95,17 +95,6 @@ llvmPackages_15.stdenv.mkDerivation rec {
     substituteInPlace Makefile \
       --replace 'c2chapel: c2chapel-venv $(FAKES)' 'c2chapel:'
     popd
-
-    # Fix a bug in the HDF5 module
-    substituteInPlace modules/packages/HDF5Helper/hdf5_helper.h \
-      --replace '(unsigned long long*)dims' '(hsize_t*)dims'
-
-    # substituteInPlace compiler/llvm/clangUtil.cpp \
-    #   --replace 'mysystem(cmd.c_str(), "Compile C File");' \
-    #             'fprintf(stderr, "clangCC = %s; clangCXX = %s\n", clangCC.c_str(), clangCXX.c_str()); mysystem(cmd.c_str(), "Compile C File");' \
-    #   --replace '  useLinkCXX = CHPL_TARGET_LD;' \
-    #             '  useLinkCXX = CHPL_TARGET_LD;
-    #              fprintf(stderr, "clangCC = %s; clangCXX = %s, useLinkCXX = %s\n", clangCC.c_str(), clangCXX.c_str(), useLinkCXX.c_str());'
   '';
 
   configurePhase = ''
@@ -179,7 +168,7 @@ llvmPackages_15.stdenv.mkDerivation rec {
       --set-default CHPL_RE2 bundled \
       --set-default CHPL_UNWIND system \
       --add-flags "-I ${llvmPackages_15.bintools.libc.dev}/include" \
-      --add-flags "-I ${llvmPackages_15.clang-unwrapped.lib}/lib/clang/14.0.6/include" \
+      --add-flags "-I ${llvmPackages_15.clang-unwrapped.lib}/lib/clang/${llvmPackages_15.clang.version}/include" \
       --add-flags "-L ${gmp}/lib" \
       --add-flags "-L ${xz.out}/lib"
 
