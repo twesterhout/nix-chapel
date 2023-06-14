@@ -54,8 +54,8 @@ llvmPackages_15.stdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "chapel-lang";
     repo = "chapel";
-    rev = "0630fe92c5416dec8236c63f6eebc1c470b5bbc3";
-    sha256 = "sha256-iHjKfBqvLnAIR2pSGsc8gm89GBgWMHzGSVfWIyQz5jg=";
+    rev = "809fed0f3e5bf1b36145728171513e9ace51f806";
+    sha256 = "sha256-Y9NisrAbavys5j+NMiLRF7SNj18ezuxGUQM+yvihjq0=";
   };
 
   outputs = [ "out" "third_party" ];
@@ -165,7 +165,6 @@ llvmPackages_15.stdenv.mkDerivation rec {
       --prefix PATH : "${gnumake}/bin" \
       --prefix PATH : "${mpi}/bin" \
       --prefix PATH : "${python3}/bin" \
-      --prefix PATH : "${llvmPackages_15.clang}/bin" \
       --prefix PKG_CONFIG_PATH : "${libunwind.dev}/lib/pkgconfig" \
       --set-default CHPL_HOME $out \
       --set-default CHPL_LLVM system \
