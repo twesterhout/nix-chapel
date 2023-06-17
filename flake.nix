@@ -42,10 +42,10 @@
         fi
 
         binaryFile=$1
-        hideReferencesTo "$binaryFile" ${llvmPackages_14.clang}
-        hideReferencesTo "$binaryFile" ${llvmPackages_14.clang-unwrapped.lib}
-        hideReferencesTo "$binaryFile" ${llvmPackages_14.llvm.dev}
-        hideReferencesTo "$binaryFile" ${llvmPackages_14.bintools.libc.dev}
+        hideReferencesTo "$binaryFile" ${llvmPackages_15.clang}
+        hideReferencesTo "$binaryFile" ${llvmPackages_15.clang-unwrapped.lib}
+        hideReferencesTo "$binaryFile" ${llvmPackages_15.llvm.dev}
+        hideReferencesTo "$binaryFile" ${llvmPackages_15.bintools.libc.dev}
         if ! strings $binaryFile | grep -q -E 'CHPL_LAUNCHER:\s+none'; then
           echo 'Replacing references to $CHPL_HOME/third-party ...'
           replaceReferencesWith "$binaryFile" ${chapel}/third-party/ ${chapel.third_party}/
