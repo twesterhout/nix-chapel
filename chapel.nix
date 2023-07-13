@@ -28,7 +28,7 @@ let
       owner = "eliben";
       repo = "pycparser";
       rev = "release_v2.20";
-      sha256 = "sha256-M2Col80YezCyRpKSKBPav8HrLhfmbzLxAIpVz0ULBYg=";
+      hash = "sha256-M2Col80YezCyRpKSKBPav8HrLhfmbzLxAIpVz0ULBYg=";
     };
     doCheck = false;
   };
@@ -39,7 +39,7 @@ let
       owner = "inducer";
       repo = "pycparserext";
       rev = "6b9db4a17130bd90a4c8e44d07f39ba9cc36c6d1";
-      sha256 = "sha256-PYfYOukddeo7SN6B9GYNY2mj3S1Dhk0ONw8ycOoYPWA=";
+      hash = "sha256-PYfYOukddeo7SN6B9GYNY2mj3S1Dhk0ONw8ycOoYPWA=";
     };
     propagatedBuildInputs = with python3Packages; [
       pycparser
@@ -54,8 +54,8 @@ llvmPackages.stdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "chapel-lang";
     repo = "chapel";
-    rev = "809fed0f3e5bf1b36145728171513e9ace51f806";
-    sha256 = "sha256-Y9NisrAbavys5j+NMiLRF7SNj18ezuxGUQM+yvihjq0=";
+    rev = "4585257c03c11e4d9aff16ff395f7217f5c162b7";
+    hash = "sha256-cDsdypLlh2YFym6rb0fiaX2ZW16By00HYrow2jDpKH0=";
   };
 
   outputs = [ "out" "third_party" ];
@@ -64,7 +64,7 @@ llvmPackages.stdenv.mkDerivation rec {
     owner = "eliben";
     repo = "pycparser";
     rev = "0055facfb5b5289ce8ef2ef12b18e34a223f9d20";
-    sha256 = "sha256-M2Col80YezCyRpKSKBPav8HrLhfmbzLxAIpVz0ULBYg=";
+    hash = "sha256-M2Col80YezCyRpKSKBPav8HrLhfmbzLxAIpVz0ULBYg=";
   };
 
   passthru.llvmPackages = llvmPackages;
@@ -119,6 +119,8 @@ llvmPackages.stdenv.mkDerivation rec {
   '';
 
   buildPhase = ''
+    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=none CHPL_HOST_MEM=cstdlib CHPL_TARGET_MEM=cstdlib -j
+
     for CHPL_LIB_PIC in none pic; do
       make CHPL_LIB_PIC=$CHPL_LIB_PIC -j
     done
@@ -128,10 +130,8 @@ llvmPackages.stdenv.mkDerivation rec {
     # for CHPL_LAUNCHER in none gasnetrun_mpi slurm-gasnetrun_mpi slurm-srun; do
     #   make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=mpi CHPL_LAUNCHER=$CHPL_LAUNCHER -j
     # done
-    for CHPL_MEM in jemalloc stdlib; do
-      for CHPL_LAUNCHER in none gasnetrun_ibv slurm-gasnetrun_ibv; do
-        make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=$CHPL_LAUNCHER -j
-      done
+    for CHPL_LAUNCHER in none gasnetrun_ibv slurm-gasnetrun_ibv; do
+      make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=$CHPL_LAUNCHER -j
     done
     make -j c2chapel
   '';
