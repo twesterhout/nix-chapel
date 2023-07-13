@@ -128,8 +128,10 @@ llvmPackages.stdenv.mkDerivation rec {
     # for CHPL_LAUNCHER in none gasnetrun_mpi slurm-gasnetrun_mpi slurm-srun; do
     #   make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=mpi CHPL_LAUNCHER=$CHPL_LAUNCHER -j
     # done
-    for CHPL_LAUNCHER in none gasnetrun_ibv slurm-gasnetrun_ibv; do
-      make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=$CHPL_LAUNCHER -j
+    for CHPL_MEM in jemalloc stdlib; do
+      for CHPL_LAUNCHER in none gasnetrun_ibv slurm-gasnetrun_ibv; do
+        make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=$CHPL_LAUNCHER -j
+      done
     done
     make -j c2chapel
   '';
