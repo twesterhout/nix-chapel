@@ -119,7 +119,9 @@ llvmPackages.stdenv.mkDerivation rec {
   '';
 
   buildPhase = ''
-    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=none CHPL_HOST_MEM=cstdlib CHPL_TARGET_MEM=cstdlib -j
+    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=none CHPL_GASNET_SEGMENT=everything CHPL_HOST_MEM=cstdlib CHPL_TARGET_MEM=cstdlib -j
+    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=none CHPL_GASNET_SEGMENT=fast CHPL_HOST_MEM=jemalloc CHPL_TARGET_MEM=jemalloc -j
+    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=none CHPL_GASNET_SEGMENT=large CHPL_HOST_MEM=jemalloc CHPL_TARGET_MEM=jemalloc -j
 
     for CHPL_LIB_PIC in none pic; do
       make CHPL_LIB_PIC=$CHPL_LIB_PIC -j
