@@ -49,13 +49,17 @@ let
 in
 llvmPackages.stdenv.mkDerivation rec {
   pname = "chapel";
-  version = "1.31.0";
+  version = "1.32.0-pre";
 
   src = fetchFromGitHub {
-    owner = "chapel-lang";
+    owner = "bradcray";
     repo = "chapel";
-    rev = "4585257c03c11e4d9aff16ff395f7217f5c162b7";
-    hash = "sha256-cDsdypLlh2YFym6rb0fiaX2ZW16By00HYrow2jDpKH0=";
+    rev = "15fb5d5b2e7d6de146b8c39aa69fb00ce11e5f17";
+    hash = "sha256-FNV2INfzpSsa1a3C+Su3Xi0e8Pe9TCaUhwHoQnqt9XE=";
+    # owner = "chapel-lang";
+    # repo = "chapel";
+    # rev = "4585257c03c11e4d9aff16ff395f7217f5c162b7";
+    # hash = "sha256-cDsdypLlh2YFym6rb0fiaX2ZW16By00HYrow2jDpKH0=";
   };
 
   outputs = [ "out" "third_party" ];
@@ -69,7 +73,6 @@ llvmPackages.stdenv.mkDerivation rec {
 
   passthru.llvmPackages = llvmPackages;
 
-  # patches = [ ./llvm-and-clang-paths.patch ];
   postPatch = ''
     patchShebangs --build configure
     patchShebangs --build util/printchplenv
