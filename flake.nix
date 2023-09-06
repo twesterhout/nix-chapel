@@ -17,6 +17,16 @@
 
       chapel-overlay = final: prev: {
         chapel = final.callPackage ./chapel.nix { llvmPackages = final.llvmPackages_15; };
+        chapel_1_31 = (final.callPackage ./chapel.nix { llvmPackages = final.llvmPackages_15; }).overrideAttrs (attrs: rec {
+          version = "1.31.0";
+          name = "${attrs.pname}-${version}";
+          src = final.fetchFromGitHub {
+            owner = "chapel-lang";
+            repo = "chapel";
+            rev = "${version}";
+            hash = "sha256-/yH3NYPP1JaqJWjYADoFjq2djYbZ4ywuHtMIPnZfyBA=";
+          };
+        });
         chapelFixupBinary = final.callPackage ./chapel-fixup-binary.nix { };
       };
 
@@ -75,7 +85,7 @@
       packages = flake-utils.lib.eachDefaultSystemMap (system: with (pkgs-for system); {
         default = chapel;
         examples = chapelExamples;
-        inherit chapel chapelFixupBinary;
+        inherit chapel chapel_1_31 chapelFixupBinary;
       });
 
       apps = flake-utils.lib.eachDefaultSystemMap (system: with (pkgs-for system); {

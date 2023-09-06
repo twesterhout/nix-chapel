@@ -50,16 +50,11 @@ in
 llvmPackages.stdenv.mkDerivation rec {
   pname = "chapel";
   version = "1.32.0-pre";
-
   src = fetchFromGitHub {
-    owner = "bradcray";
+    owner = "chapel-lang";
     repo = "chapel";
-    rev = "15fb5d5b2e7d6de146b8c39aa69fb00ce11e5f17";
-    hash = "sha256-FNV2INfzpSsa1a3C+Su3Xi0e8Pe9TCaUhwHoQnqt9XE=";
-    # owner = "chapel-lang";
-    # repo = "chapel";
-    # rev = "4585257c03c11e4d9aff16ff395f7217f5c162b7";
-    # hash = "sha256-cDsdypLlh2YFym6rb0fiaX2ZW16By00HYrow2jDpKH0=";
+    rev = "e3a9c913516ac9abf48c9a8b86c199953f12030f"; # 15 Aug 2023
+    hash = "sha256-MzCIzJdFAjK/BNx6C6gaF/3Y9lmw08CauVJfu6N+YrE=";
   };
 
   outputs = [ "out" "third_party" ];
@@ -110,7 +105,6 @@ llvmPackages.stdenv.mkDerivation rec {
     export CHPL_HOST_COMPILER=llvm
     export CHPL_HOST_CC=${llvmPackages.clang}/bin/clang
     export CHPL_HOST_CXX=${llvmPackages.clang}/bin/clang++
-    export CHPL_TARGET_CPU=none
     export CHPL_TARGET_CC=${llvmPackages.clang}/bin/clang
     export CHPL_TARGET_CXX=${llvmPackages.clang}/bin/clang++
     export CHPL_GMP=system
@@ -118,27 +112,31 @@ llvmPackages.stdenv.mkDerivation rec {
     export CHPL_UNWIND=system
     export PMI_HOME=${pmix}
 
+    export CHPL_LAUNCHER=none
+    export CHPL_TARGET_MEM=jemalloc
+    export CHPL_TARGET_CPU=none
+
     ./configure --chpl-home=$out
   '';
 
   buildPhase = ''
-    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=none CHPL_GASNET_SEGMENT=everything CHPL_HOST_MEM=cstdlib CHPL_TARGET_MEM=cstdlib -j
-    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=none CHPL_GASNET_SEGMENT=fast CHPL_HOST_MEM=jemalloc CHPL_TARGET_MEM=jemalloc -j
-    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=none CHPL_GASNET_SEGMENT=large CHPL_HOST_MEM=jemalloc CHPL_TARGET_MEM=jemalloc -j
+    for arch in none nehalem; do
+      export CHPL_TARGET_CPU=$arch
 
-    for CHPL_LIB_PIC in none pic; do
-      make CHPL_LIB_PIC=$CHPL_LIB_PIC -j
+      # Single locale
+      make CHPL_COMM=none CHPL_LIB_PIC=none -j
+      make CHPL_COMM=none CHPL_LIB_PIC=pic -j
+      # SMP
+      make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=smp -j
+      # Infiniband
+      make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=everything CHPL_TARGET_MEM=cstdlib -j
+      make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=fast -j
+      make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=large -j
+      # UDP
+      make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp CHPL_LAUNCHER=none -j
+
+      make -j c2chapel
     done
-    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=smp -j
-    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp -j
-    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp CHPL_LAUNCHER=none -j
-    # for CHPL_LAUNCHER in none gasnetrun_mpi slurm-gasnetrun_mpi slurm-srun; do
-    #   make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=mpi CHPL_LAUNCHER=$CHPL_LAUNCHER -j
-    # done
-    for CHPL_LAUNCHER in none gasnetrun_ibv slurm-gasnetrun_ibv; do
-      make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_LAUNCHER=$CHPL_LAUNCHER -j
-    done
-    make -j c2chapel
   '';
 
   postInstall = ''
@@ -170,7 +168,9 @@ llvmPackages.stdenv.mkDerivation rec {
       --set-default CHPL_HOST_COMPILER llvm \
       --set-default CHPL_HOST_CC "${llvmPackages.clang}/bin/clang" \
       --set-default CHPL_HOST_CXX "${llvmPackages.clang}/bin/clang++" \
+      --set-default CHPL_LAUNCHER none \
       --set-default CHPL_TARGET_CPU none \
+      --set-default CHPL_TARGET_MEM jemalloc \
       --set-default CHPL_TARGET_CC "${llvmPackages.clang}/bin/clang" \
       --set-default CHPL_TARGET_CXX "${llvmPackages.clang}/bin/clang++" \
       --set-default CHPL_GMP system \
@@ -191,7 +191,9 @@ llvmPackages.stdenv.mkDerivation rec {
       --set-default CHPL_HOST_COMPILER llvm \
       --set-default CHPL_HOST_CC "${llvmPackages.clang}/bin/clang" \
       --set-default CHPL_HOST_CXX "${llvmPackages.clang}/bin/clang++" \
+      --set-default CHPL_LAUNCHER none \
       --set-default CHPL_TARGET_CPU none \
+      --set-default CHPL_TARGET_MEM jemalloc \
       --set-default CHPL_TARGET_CC "${llvmPackages.clang}/bin/clang" \
       --set-default CHPL_TARGET_CXX "${llvmPackages.clang}/bin/clang++" \
       --set-default CHPL_GMP system \
