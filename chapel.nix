@@ -6,6 +6,7 @@
 , gmp
 , gnumake
 , gnum4
+, lib
 , libunwind
 , llvmPackages
 , makeWrapper
@@ -110,8 +111,9 @@ llvmPackages.stdenv.mkDerivation rec {
     export CHPL_GMP=system
     export CHPL_RE2=bundled
     export CHPL_UNWIND=system
+  '' + lib.optionalString llvmPackages.stdenv.isLinux ''
     export PMI_HOME=${pmix}
-
+  '' + ''
     export CHPL_LAUNCHER=none
     export CHPL_TARGET_MEM=jemalloc
     export CHPL_TARGET_CPU=none
@@ -128,13 +130,14 @@ llvmPackages.stdenv.mkDerivation rec {
       make CHPL_COMM=none CHPL_LIB_PIC=pic -j
       # SMP
       make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=smp -j
-      # Infiniband
-      # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=everything CHPL_TARGET_MEM=cstdlib -j
-      make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=fast -j
-      # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=large -j
-      # UDP
-      make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp CHPL_LAUNCHER=none -j
-
+  '' + lib.optionalString llvmPackages.stdenv.isLinux ''
+    # Infiniband
+    # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=everything CHPL_TARGET_MEM=cstdlib -j
+    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=fast -j
+    # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=large -j
+    # UDP
+    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp CHPL_LAUNCHER=none -j
+  '' + ''
       make -j c2chapel
     done
   '';
@@ -159,7 +162,6 @@ llvmPackages.stdenv.mkDerivation rec {
       --prefix PATH : "${pkg-config}/bin" \
       --prefix PATH : "${coreutils}/bin" \
       --prefix PATH : "${gnumake}/bin" \
-      --prefix PATH : "${mpi}/bin" \
       --prefix PATH : "${python3}/bin" \
       --prefix PKG_CONFIG_PATH : "${libunwind.dev}/lib/pkgconfig" \
       --set-default CHPL_HOME $out \
@@ -209,6 +211,7 @@ llvmPackages.stdenv.mkDerivation rec {
     llvmPackages.libclang.dev
     libunwind
     gmp
+  ] ++ lib.optionals llvmPackages.stdenv.isLinux [
     # mpi
     pmix
     rdma-core
