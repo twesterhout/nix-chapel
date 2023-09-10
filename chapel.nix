@@ -129,9 +129,9 @@ llvmPackages.stdenv.mkDerivation rec {
       # SMP
       make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=smp -j
       # Infiniband
-      make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=everything CHPL_TARGET_MEM=cstdlib -j
+      # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=everything CHPL_TARGET_MEM=cstdlib -j
       make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=fast -j
-      make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=large -j
+      # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=large -j
       # UDP
       make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp CHPL_LAUNCHER=none -j
 
