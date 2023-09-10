@@ -179,7 +179,9 @@ llvmPackages.stdenv.mkDerivation rec {
       --set-default CHPL_GMP system \
       --set-default CHPL_RE2 bundled \
       --set-default CHPL_UNWIND ${if llvmPackages.stdenv.isDarwin then "none" else "system"} \
+  '' + lib.optionalString (!llvmPackages.stdenv.isDarwin) '' \
       --add-flags "-I ${llvmPackages.bintools.libc.dev}/include" \
+  '' + '' \
       --add-flags "-I ${llvmPackages.clang-unwrapped.lib}/lib/clang/${llvmPackages.clang.version}/include" \
       --add-flags "-L ${gmp}/lib" \
       --add-flags "-L ${xz.out}/lib"
@@ -188,7 +190,9 @@ llvmPackages.stdenv.mkDerivation rec {
       --prefix PATH : "${python3}/bin" \
       --prefix PATH : "${pkg-config}/bin" \
       --prefix PATH : "${which}/bin" \
-      --prefix PKG_CONFIG_PATH : "${libunwind.dev}/lib/pkgconfig" \
+  '' + lib.optionalString (!llvmPackages.stdenv.isDarwin) '' \
+    --prefix PKG_CONFIG_PATH : "${libunwind.dev}/lib/pkgconfig" \
+  '' + '' \
       --set-default CHPL_LLVM system \
       --set-default CHPL_LLVM_CONFIG "${llvmPackages.llvm.dev}/bin/llvm-config" \
       --set-default CHPL_HOST_COMPILER llvm \
@@ -201,7 +205,7 @@ llvmPackages.stdenv.mkDerivation rec {
       --set-default CHPL_TARGET_CXX "${llvmPackages.clang}/bin/clang++" \
       --set-default CHPL_GMP system \
       --set-default CHPL_RE2 bundled \
-      --set-default CHPL_UNWIND system
+      --set-default CHPL_UNWIND ${if llvmPackages.stdenv.isDarwin then "none" else "system"}
 
     ln -s $out/util/printchplenv $out/bin/
   '';
