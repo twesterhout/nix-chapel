@@ -10,7 +10,6 @@
 , libunwind
 , llvmPackages
 , makeWrapper
-, mpi
 , perl
 , pmix
 , python3
@@ -110,7 +109,7 @@ llvmPackages.stdenv.mkDerivation rec {
     export CHPL_TARGET_CXX=${llvmPackages.clang}/bin/clang++
     export CHPL_GMP=system
     export CHPL_RE2=bundled
-    export CHPL_UNWIND=system
+    export CHPL_UNWIND=${if llvmPackages.stdenv.isDarwin then "none" else "system"}
   '' + lib.optionalString llvmPackages.stdenv.isLinux ''
     export PMI_HOME=${pmix}
   '' + ''
@@ -163,7 +162,9 @@ llvmPackages.stdenv.mkDerivation rec {
       --prefix PATH : "${coreutils}/bin" \
       --prefix PATH : "${gnumake}/bin" \
       --prefix PATH : "${python3}/bin" \
-      --prefix PKG_CONFIG_PATH : "${libunwind.dev}/lib/pkgconfig" \
+  '' + lib.optionalString (!llvmPackages.stdenv.isDarwin) '' \
+    --prefix PKG_CONFIG_PATH : "${libunwind.dev}/lib/pkgconfig" \
+  '' + '' \
       --set-default CHPL_HOME $out \
       --set-default CHPL_LLVM system \
       --set-default CHPL_LLVM_CONFIG "${llvmPackages.llvm.dev}/bin/llvm-config" \
@@ -177,7 +178,7 @@ llvmPackages.stdenv.mkDerivation rec {
       --set-default CHPL_TARGET_CXX "${llvmPackages.clang}/bin/clang++" \
       --set-default CHPL_GMP system \
       --set-default CHPL_RE2 bundled \
-      --set-default CHPL_UNWIND system \
+      --set-default CHPL_UNWIND ${if llvmPackages.stdenv.isDarwin then "none" else "system"} \
       --add-flags "-I ${llvmPackages.bintools.libc.dev}/include" \
       --add-flags "-I ${llvmPackages.clang-unwrapped.lib}/lib/clang/${llvmPackages.clang.version}/include" \
       --add-flags "-L ${gmp}/lib" \
