@@ -125,19 +125,19 @@ llvmPackages.stdenv.mkDerivation rec {
       export CHPL_TARGET_CPU=$arch
 
       # Single locale
-      make CHPL_COMM=none CHPL_LIB_PIC=none -j
-      make CHPL_COMM=none CHPL_LIB_PIC=pic -j
+      make CHPL_COMM=none CHPL_LIB_PIC=none -j$NIX_BUILD_CORES
+      make CHPL_COMM=none CHPL_LIB_PIC=pic -j$NIX_BUILD_CORES
       # SMP
-      make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=smp -j
+      make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=smp -j$NIX_BUILD_CORES
   '' + lib.optionalString llvmPackages.stdenv.isLinux ''
     # Infiniband
-    # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=everything CHPL_TARGET_MEM=cstdlib -j
-    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=fast -j
-    # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=large -j
+    # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=everything CHPL_TARGET_MEM=cstdlib -j$NIX_BUILD_CORES
+    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=fast -j$NIX_BUILD_CORES
+    # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=large -j$NIX_BUILD_CORES
     # UDP
-    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp CHPL_LAUNCHER=none -j
+    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp CHPL_LAUNCHER=none -j$NIX_BUILD_CORES
   '' + ''
-      make -j c2chapel
+      make c2chapel -j$NIX_BUILD_CORES
     done
   '';
 
