@@ -49,12 +49,14 @@ let
 in
 llvmPackages.stdenv.mkDerivation rec {
   pname = "chapel";
-  version = "1.32.0-pre";
+  version = "1.32.0";
   src = fetchFromGitHub {
     owner = "chapel-lang";
     repo = "chapel";
-    rev = "e3a9c913516ac9abf48c9a8b86c199953f12030f"; # 15 Aug 2023
-    hash = "sha256-MzCIzJdFAjK/BNx6C6gaF/3Y9lmw08CauVJfu6N+YrE=";
+    rev = "1.32.0";
+    hash = "sha256-53hwgWM78Zgse0+d8EVzWESWN0MoDORkdgcbZhlv7hg=";
+    # rev = "e3a9c913516ac9abf48c9a8b86c199953f12030f"; # 15 Aug 2023
+    # hash = "sha256-MzCIzJdFAjK/BNx6C6gaF/3Y9lmw08CauVJfu6N+YrE=";
   };
 
   outputs = [ "out" "third_party" ];
