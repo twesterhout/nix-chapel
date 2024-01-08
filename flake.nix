@@ -17,6 +17,8 @@
 
       chapel-overlay = final: prev: {
         chapel = final.callPackage ./chapel.nix { llvmPackages = final.llvmPackages_15; };
+        chapel-gnu = final.callPackage ./chapel.nix { compiler = "gnu"; };
+
         chapel_1_31 = (final.callPackage ./chapel.nix { llvmPackages = final.llvmPackages_15; }).overrideAttrs (attrs: rec {
           version = "1.31.0";
           name = "${attrs.pname}-${version}";
@@ -27,6 +29,7 @@
             hash = "sha256-/yH3NYPP1JaqJWjYADoFjq2djYbZ4ywuHtMIPnZfyBA=";
           };
         });
+
         chapelFixupBinary = final.callPackage ./chapel-fixup-binary.nix { };
       };
 
@@ -37,19 +40,17 @@
               inherit pname;
               version = "1.0.0";
               src = ./src;
-              nativeBuildInputs = with prev; [ chapel chapelFixupBinary ];
-              buildPhase =
-                let
-                  flags = lib.concatStringsSep " "
-                    (lib.mapAttrsToList (name: value: "${name}=${value}") settings);
-                in
-                ''
-                  mkdir -p $out/bin
-                  ${flags} chpl -o $out/bin/hello hello6-taskpar-dist.chpl
-                  for f in $(ls $out/bin);
-                    chapelFixupBinary $out/bin/$f
-                  done
-                '';
+              nativeBuildInputs = with prev; [
+                (chapel.override { customSettings = settings; })
+                chapelFixupBinary
+              ];
+              buildPhase = ''
+                mkdir -p $out/bin
+                chpl -o $out/bin/hello hello6-taskpar-dist.chpl
+                for f in $(ls $out/bin);
+                  chapelFixupBinary $out/bin/$f
+                done
+              '';
             };
           in
           (prev.chapelExamples or { }) // rec {
@@ -82,18 +83,59 @@
       };
     in
     {
-      packages = flake-utils.lib.eachDefaultSystemMap (system: with (pkgs-for system); {
-        default = chapel;
-        examples = chapelExamples;
-        inherit chapel chapel_1_31 chapelFixupBinary;
-      });
+      packages = flake-utils.lib.eachDefaultSystemMap (system: with (pkgs-for system);
+        let
+          chapel-with-settings = settings: chapel.override { inherit settings; };
+          chapel-with-compiler-settings = compiler: settings: chapel.override { inherit compiler settings; };
 
-      apps = flake-utils.lib.eachDefaultSystemMap (system: with (pkgs-for system); {
-        default = {
-          type = "app";
-          program = "${chapel}/bin/chpl";
-        };
-      });
+          # A hack to make 'nix build' build multiple derivations at once.
+          combine = drvs: stdenv.mkDerivation {
+            pname = "combine";
+            version = "0.1";
+            dontUnpack = true;
+            dontConfigure = true;
+            dontBuild = true;
+            installPhase = ''
+              mkdir -p $out/share
+            '' + lib.concatStringsSep "\n" (builtins.map (p: "echo '${p}' >> $out/share/paths") drvs);
+          };
+        in
+        rec {
+          default = chapel;
+          examples = chapelExamples;
+          inherit chapel chapel_1_31 chapelFixupBinary;
+
+          single-locale = combine (
+            (map chapel-with-settings (lib.cartesianProductOfSets {
+              CHPL_LIB_PIC = [ "none" "pic" ];
+              CHPL_TARGET_CPU = [ "none" ] ++ lib.optional stdenv.isx86_64 "nehalem";
+            }))
+            ++ [
+              # The following are great for debugging
+              (chapel-with-compiler-settings "gnu" { CHPL_TARGET_MEM = "cstdlib"; CHPL_HOST_MEM = "cstdlib"; CHPL_UNWIND = "none"; CHPL_TASKS = "fifo"; CHPL_SANITIZE_EXE = "address"; CHPL_LIB_PIC = "none"; })
+              (chapel-with-compiler-settings "gnu" { CHPL_TARGET_MEM = "cstdlib"; CHPL_HOST_MEM = "cstdlib"; CHPL_UNWIND = "none"; CHPL_TASKS = "fifo"; CHPL_SANITIZE_EXE = "address"; CHPL_LIB_PIC = "pic"; })
+            ]
+          );
+
+          multi-locale = combine
+            # GASNet-based
+            (map chapel-with-settings (lib.cartesianProductOfSets {
+              CHPL_TARGET_CPU = [ "none" ] ++ lib.optional stdenv.isx86_64 "nehalem";
+              CHPL_COMM = [ "gasnet" ];
+              CHPL_COMM_SUBSTRATE = [ "smp" "udp" "ibv" ];
+            }))
+          ;
+
+          all = combine [ single-locale multi-locale ];
+        });
+
+      apps = flake-utils.lib.eachDefaultSystemMap
+        (system: with (pkgs-for system); {
+          default = {
+            type = "app";
+            program = "${chapel}/bin/chpl";
+          };
+        });
 
       overlays = {
         default = chapel-overlay;

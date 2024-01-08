@@ -3,6 +3,7 @@
 , coreutils
 , fetchFromGitHub
 , file
+, gcc
 , gmp
 , gnumake
 , gnum4
@@ -10,15 +11,21 @@
 , libunwind
 , llvmPackages
 , makeWrapper
+, patchelf
 , perl
 , pmix
 , python3
 , python3Packages
 , pkg-config
 , rdma-core
+, stdenv
 , which
 , xz
+, compiler ? "llvm"
+, settings ? { }
 }:
+
+assert compiler == "llvm" || compiler == "gnu";
 
 let
   pycparser = python3Packages.buildPythonPackage {
@@ -46,15 +53,79 @@ let
       ply
     ];
   };
+
+  commonSettings = {
+    CHPL_GMP = "system";
+    CHPL_RE2 = "bundled";
+    CHPL_UNWIND = if llvmPackages.stdenv.isDarwin then "none" else "system";
+    CHPL_LAUNCHER = "none";
+    CHPL_TARGET_MEM = "jemalloc";
+    CHPL_TARGET_CPU = "none";
+  } // lib.optionalAttrs llvmPackages.stdenv.isLinux {
+    PMI_HOME = "${pmix}";
+  };
+
+  llvmSpecificSettings = {
+    CC = "${llvmPackages.clang}/bin/cc";
+    CXX = "${llvmPackages.clang}/bin/c++";
+    CHPL_LLVM = "system";
+    CHPL_LLVM_CONFIG = "${llvmPackages.llvm.dev}/bin/llvm-config";
+    CHPL_HOST_COMPILER = "llvm";
+    CHPL_HOST_CC = "${llvmPackages.clang}/bin/clang";
+    CHPL_HOST_CXX = "${llvmPackages.clang}/bin/clang++";
+    CHPL_TARGET_CC = "${llvmPackages.clang}/bin/clang";
+    CHPL_TARGET_CXX = "${llvmPackages.clang}/bin/clang++";
+  };
+
+  gnuSpecificSettings = {
+    CC = "${gcc}/bin/cc";
+    CXX = "${gcc}/bin/c++";
+    CHPL_LLVM = "none";
+    CHPL_HOST_COMPILER = "gnu";
+    CHPL_HOST_CC = "${gcc}/bin/gcc";
+    CHPL_HOST_CXX = "${gcc}/bin/g++";
+    CHPL_TARGET_CC = "${gcc}/bin/gcc";
+    CHPL_TARGET_CXX = "${gcc}/bin/g++";
+  };
+
+  chplSettings = commonSettings // (if compiler == "llvm" then llvmSpecificSettings else gnuSpecificSettings) // settings;
+  chplStdenv = if compiler == "llvm" then llvmPackages.stdenv else stdenv;
+
+  chplBuildEnv = lib.concatStringsSep " " (lib.mapAttrsToList (k: v: "${k}='${v}'") chplSettings);
+
+  wrapperArgs = lib.concatStringsSep " " ([
+    "--prefix PATH : '${lib.makeBinPath [coreutils gnumake pkg-config python3 which]}'"
+    "--set-default CHPL_HOME $out"
+  ]
+  ++ (lib.mapAttrsToList (k: v: "--set-default ${k} '${v}'") chplSettings)
+  ++ lib.optionals (!chplStdenv.isDarwin) [
+    "--prefix PKG_CONFIG_PATH : '${libunwind.dev}/lib/pkgconfig'"
+  ]);
+
+  compilerSpecificWrapperArgs = lib.concatStringsSep " " ([
+    "--add-flags '-L ${xz.out}/lib'"
+  ]
+  ++ lib.optionals (chplSettings.CHPL_GMP == "system") [
+    "--add-flags '-L ${gmp}/lib'"
+  ]
+  ++ lib.optionals (!chplStdenv.isDarwin && compiler == "llvm") [
+    "--add-flags '-I ${llvmPackages.clang-unwrapped.lib}/lib/clang/${llvmPackages.clang.version}/include'"
+    "--add-flags '-I ${llvmPackages.bintools.libc.dev}/include'"
+  ]
+  ++ lib.optionals (!chplStdenv.isDarwin && compiler == "gnu") [
+    "--add-flags '-I ${chplStdenv.cc.libc.dev}/include'"
+  ]);
 in
-llvmPackages.stdenv.mkDerivation rec {
+chplStdenv.mkDerivation rec {
   pname = "chapel";
-  version = "1.32.0";
+  version = "1.33.0";
   src = fetchFromGitHub {
     owner = "chapel-lang";
     repo = "chapel";
-    rev = "1.32.0";
-    hash = "sha256-53hwgWM78Zgse0+d8EVzWESWN0MoDORkdgcbZhlv7hg=";
+    rev = "0d0d6205baaf92635a61de939ea23e59ab1e7522";
+    hash = "sha256-FnolIHJ8moIx1rpsz3YjLmpLUi6KItd9ikBqdcTF2mA=";
+    # rev = "1.32.0";
+    # hash = "sha256-53hwgWM78Zgse0+d8EVzWESWN0MoDORkdgcbZhlv7hg=";
     # rev = "e3a9c913516ac9abf48c9a8b86c199953f12030f"; # 15 Aug 2023
     # hash = "sha256-MzCIzJdFAjK/BNx6C6gaF/3Y9lmw08CauVJfu6N+YrE=";
   };
@@ -77,71 +148,104 @@ llvmPackages.stdenv.mkDerivation rec {
     patchShebangs --build util/test/checkChplInstall
     patchShebangs --build tools/c2chapel/c2chapel.py
 
-    # In the following we set up all the dependencies for c2chapel such that
-    # Chapel doesn't try (and doesn't need to) create Python virtual environments
-    substituteInPlace Makefile \
-      --replace 'c2chapel: third-party-c2chapel-venv FORCE' 'c2chapel: FORCE'
+    export CHPL_DONT_BUILD_CHPLDOC_VENV=1
+    export CHPL_DONT_BUILD_TEST_VENV=1
+    export CHPL_DONT_BUILD_C2CHAPEL_VENV=1
+
+    # Needed until https://github.com/chapel-lang/chapel/issues/24128 is resolved
+    substituteInPlace third-party/Makefile \
+      --replace 'cd chpl-venv && $(MAKE) c2chapel-venv' \
+                '@if [ -z "$$CHPL_DONT_BUILD_C2CHAPEL_VENV" ]; then cd chpl-venv && $(MAKE) c2chapel-venv; fi'
+    # tools/c2chapel/Makefile \
+    #   --replace 'c2chapel-venv $(FAKES)' '$(FAKES)'
 
     # This is essentially what the $(FAKES) target in the Makefile does, but
     # we use $${c2chapel-fake-headers} instead of downloading the archive from
     # the internet
     pushd tools/c2chapel
     mkdir -p install/fakeHeaders
-    cp --no-preserve=mode -r \
-      ${c2chapel-fake-headers}/utils/fake_libc_include/* \
-      install/fakeHeaders/
+    cp --no-preserve=mode -r ${c2chapel-fake-headers}/utils/fake_libc_include/* install/fakeHeaders/
     ./utils/fixFakes.sh install/fakeHeaders utils/custom.h
     mkdir -p install/fakeHeaders/utils
     cp utils/custom.h install/fakeHeaders/utils/
-
-    substituteInPlace Makefile \
-      --replace 'c2chapel: c2chapel-venv $(FAKES)' 'c2chapel:'
     popd
   '';
 
   configurePhase = ''
-    export CC=${llvmPackages.clang}/bin/cc
-    export CXX=${llvmPackages.clang}/bin/c++
-    export CHPL_LLVM=system
-    export CHPL_LLVM_CONFIG=${llvmPackages.llvm.dev}/bin/llvm-config
-    export CHPL_HOST_COMPILER=llvm
-    export CHPL_HOST_CC=${llvmPackages.clang}/bin/clang
-    export CHPL_HOST_CXX=${llvmPackages.clang}/bin/clang++
-    export CHPL_TARGET_CC=${llvmPackages.clang}/bin/clang
-    export CHPL_TARGET_CXX=${llvmPackages.clang}/bin/clang++
-    export CHPL_GMP=system
-    export CHPL_RE2=bundled
-    export CHPL_UNWIND=${if llvmPackages.stdenv.isDarwin then "none" else "system"}
-  '' + lib.optionalString llvmPackages.stdenv.isLinux ''
-    export PMI_HOME=${pmix}
-  '' + ''
-    export CHPL_LAUNCHER=none
-    export CHPL_TARGET_MEM=jemalloc
-    export CHPL_TARGET_CPU=none
-
+    export ${chplBuildEnv}
     ./configure --chpl-home=$out
   '';
+  # ''
+  #   export CC=${llvmPackages.clang}/bin/cc
+  #   export CXX=${llvmPackages.clang}/bin/c++
+  #   export CHPL_LLVM=system
+  #   export CHPL_LLVM_CONFIG=${llvmPackages.llvm.dev}/bin/llvm-config
+  #   export CHPL_HOST_COMPILER=llvm
+  #   export CHPL_HOST_CC=${llvmPackages.clang}/bin/clang
+  #   export CHPL_HOST_CXX=${llvmPackages.clang}/bin/clang++
+  #   export CHPL_TARGET_CC=${llvmPackages.clang}/bin/clang
+  #   export CHPL_TARGET_CXX=${llvmPackages.clang}/bin/clang++
+  #   export CHPL_GMP=system
+  #   export CHPL_RE2=bundled
+  #   export CHPL_UNWIND=${if llvmPackages.stdenv.isDarwin then "none" else "system"}
+  # '' + lib.optionalString llvmPackages.stdenv.isLinux ''
+  #   export PMI_HOME=${pmix}
+  # '' + ''
+  #   export CHPL_LAUNCHER=none
+  #   export CHPL_TARGET_MEM=jemalloc
+  #   export CHPL_TARGET_CPU=none
+
+  #   ./configure --chpl-home=$out
+  # '';
 
   buildPhase = ''
-    for arch in none nehalem; do
-      export CHPL_TARGET_CPU=$arch
-
-      # Single locale
-      make CHPL_COMM=none CHPL_LIB_PIC=none -j$NIX_BUILD_CORES
-      make CHPL_COMM=none CHPL_LIB_PIC=pic -j$NIX_BUILD_CORES
-      # SMP
-      make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=smp -j$NIX_BUILD_CORES
-  '' + lib.optionalString llvmPackages.stdenv.isLinux ''
-    # Infiniband
-    # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=everything CHPL_TARGET_MEM=cstdlib -j$NIX_BUILD_CORES
-    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=fast -j$NIX_BUILD_CORES
-    # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=large -j$NIX_BUILD_CORES
-    # UDP
-    make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp CHPL_LAUNCHER=none -j$NIX_BUILD_CORES
-  '' + ''
-      make c2chapel -j$NIX_BUILD_CORES
-    done
+    make -j$NIX_BUILD_CORES
+    make -j$NIX_BUILD_CORES c2chapel
   '';
+  #   CHPL_LIB_PIC=none
+  #   make -j$NIX_BUILD_CORES CHPL_LIB_PIC=pic
+  # '' + lib.optionalString (compiler == "gnu") ''
+  #   for chpl_lib_pic in none pic; do
+  #     make -j$NIX_BUILD_CORES \
+  #       CHPL_LIB_PIC=$chpl_lib_pic \
+  #       CHPL_TARGET_MEM=cstdlib CHPL_HOST_MEM=cstdlib \
+  #       CHPL_UNWIND=none \
+  #       CHPL_TASKS=fifo \
+  #       CHPL_SANITIZE_EXE=address
+
+  #     make -j$NIX_BUILD_CORES \
+  #       CHPL_LIB_PIC=pic CHPL_UNWIND=none \
+  #       CHPL_TARGET_MEM=cstdlib CHPL_HOST_MEM=cstdlib \
+  #       CHPL_TASKS=qthreads
+
+  #   done
+  # '';
+
+  enableParallelBuilding = true;
+
+  # buildPhase = ''
+  #   for arch in none nehalem; do
+  #     export CHPL_TARGET_CPU=$arch
+
+  #     # C backend
+  #     make CHPL_TARGET_COMPILER=gnu CHPL_TARGET_CC=gcc CHPL_TARGET_CXX=g++ CHPL_LIB_PIC=pic -j$NIX_BUILD_CORES
+
+  #     # Single locale
+  #     make CHPL_COMM=none CHPL_LIB_PIC=none -j$NIX_BUILD_CORES
+  #     make CHPL_COMM=none CHPL_LIB_PIC=pic -j$NIX_BUILD_CORES
+  #     # SMP
+  #     make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=smp -j$NIX_BUILD_CORES
+  # '' + lib.optionalString llvmPackages.stdenv.isLinux ''
+  #   # Infiniband
+  #   # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=everything CHPL_TARGET_MEM=cstdlib -j$NIX_BUILD_CORES
+  #   make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=fast -j$NIX_BUILD_CORES
+  #   # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=large -j$NIX_BUILD_CORES
+  #   # UDP
+  #   make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp CHPL_LAUNCHER=none -j$NIX_BUILD_CORES
+  # '' + ''
+  #     make c2chapel -j$NIX_BUILD_CORES
+  #   done
+  # '';
 
   postInstall = ''
     mkdir -p $third_party
@@ -160,69 +264,28 @@ llvmPackages.stdenv.mkDerivation rec {
       --prefix PYTHONPATH : "${pycparserext}/${python3.sitePackages}"
 
     makeWrapper $out/bin/linux64-x86_64/chpl $out/bin/chpl \
-      --prefix PATH : "${pkg-config}/bin" \
-      --prefix PATH : "${coreutils}/bin" \
-      --prefix PATH : "${gnumake}/bin" \
-      --prefix PATH : "${python3}/bin" \
-  '' + lib.optionalString (!llvmPackages.stdenv.isDarwin) '' \
-    --prefix PKG_CONFIG_PATH : "${libunwind.dev}/lib/pkgconfig" \
-  '' + '' \
-      --set-default CHPL_HOME $out \
-      --set-default CHPL_LLVM system \
-      --set-default CHPL_LLVM_CONFIG "${llvmPackages.llvm.dev}/bin/llvm-config" \
-      --set-default CHPL_HOST_COMPILER llvm \
-      --set-default CHPL_HOST_CC "${llvmPackages.clang}/bin/clang" \
-      --set-default CHPL_HOST_CXX "${llvmPackages.clang}/bin/clang++" \
-      --set-default CHPL_LAUNCHER none \
-      --set-default CHPL_TARGET_CPU none \
-      --set-default CHPL_TARGET_MEM jemalloc \
-      --set-default CHPL_TARGET_CC "${llvmPackages.clang}/bin/clang" \
-      --set-default CHPL_TARGET_CXX "${llvmPackages.clang}/bin/clang++" \
-      --set-default CHPL_GMP system \
-      --set-default CHPL_RE2 bundled \
-      --set-default CHPL_UNWIND ${if llvmPackages.stdenv.isDarwin then "none" else "system"} \
-  '' + lib.optionalString (!llvmPackages.stdenv.isDarwin) '' \
-      --add-flags "-I ${llvmPackages.bintools.libc.dev}/include" \
-  '' + '' \
-      --add-flags "-I ${llvmPackages.clang-unwrapped.lib}/lib/clang/${llvmPackages.clang.version}/include" \
-      --add-flags "-L ${gmp}/lib" \
-      --add-flags "-L ${xz.out}/lib"
+      ${wrapperArgs} \
+      ${compilerSpecificWrapperArgs}
 
     wrapProgram $out/util/printchplenv \
-      --prefix PATH : "${python3}/bin" \
-      --prefix PATH : "${pkg-config}/bin" \
-      --prefix PATH : "${which}/bin" \
-  '' + lib.optionalString (!llvmPackages.stdenv.isDarwin) '' \
-    --prefix PKG_CONFIG_PATH : "${libunwind.dev}/lib/pkgconfig" \
-  '' + '' \
-      --set-default CHPL_LLVM system \
-      --set-default CHPL_LLVM_CONFIG "${llvmPackages.llvm.dev}/bin/llvm-config" \
-      --set-default CHPL_HOST_COMPILER llvm \
-      --set-default CHPL_HOST_CC "${llvmPackages.clang}/bin/clang" \
-      --set-default CHPL_HOST_CXX "${llvmPackages.clang}/bin/clang++" \
-      --set-default CHPL_LAUNCHER none \
-      --set-default CHPL_TARGET_CPU none \
-      --set-default CHPL_TARGET_MEM jemalloc \
-      --set-default CHPL_TARGET_CC "${llvmPackages.clang}/bin/clang" \
-      --set-default CHPL_TARGET_CXX "${llvmPackages.clang}/bin/clang++" \
-      --set-default CHPL_GMP system \
-      --set-default CHPL_RE2 bundled \
-      --set-default CHPL_UNWIND ${if llvmPackages.stdenv.isDarwin then "none" else "system"}
+      ${wrapperArgs}
 
     ln -s $out/util/printchplenv $out/bin/
+
+  '' + lib.optionalString llvmPackages.stdenv.isLinux ''
+    # libChplFrontendShared.so contains a reference to lib/compiler/linux64-x86_64 in its RPATH.
+    # This folder contains libChplFrontend.so, but libChplFrontend.so has also
+    # been installed to $out/lib/compiler/linux64-x86_64. Remove the temporary
+    # build folder and instead add $ORIGIN to RPATH
+    rm -r lib/compiler/linux64-x86_64
+    patchelf --add-rpath '$ORIGIN' $out/lib/compiler/linux64-x86_64/libChplFrontendShared.so
   '';
 
-  buildInputs = [
-    llvmPackages.clang
-    llvmPackages.llvm
-    llvmPackages.libclang.dev
-    libunwind
-    gmp
-  ] ++ lib.optionals llvmPackages.stdenv.isLinux [
-    # mpi
-    pmix
-    rdma-core
-  ];
+  buildInputs =
+    lib.optionals (chplSettings.CHPL_UNWIND == "system") [ libunwind ]
+    ++ lib.optionals (chplSettings.CHPL_GMP == "system") [ gmp ]
+    ++ lib.optionals (compiler == "llvm") [ llvmPackages.clang llvmPackages.llvm llvmPackages.libclang.dev ]
+    ++ lib.optionals chplStdenv.isLinux [ pmix rdma-core ];
 
   nativeBuildInputs = [
     bash
@@ -230,12 +293,16 @@ llvmPackages.stdenv.mkDerivation rec {
     gnumake
     gnum4
     file
-    llvmPackages.clang
     makeWrapper
+    patchelf
     perl
     pkg-config
     python3
     which
+  ] ++ lib.optionals (compiler == "llvm") [
+    llvmPackages.clang
+  ] ++ lib.optionals (compiler == "gnu") [
+    gcc
   ];
 
   meta = {
