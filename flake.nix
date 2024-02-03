@@ -15,22 +15,35 @@
     let
       inherit (nixpkgs) lib;
 
-      chapel-overlay = final: prev: {
-        chapel = final.callPackage ./chapel.nix { llvmPackages = final.llvmPackages_15; };
-        chapel-gnu = final.callPackage ./chapel.nix { compiler = "gnu"; };
-
-        chapel_1_31 = (final.callPackage ./chapel.nix { llvmPackages = final.llvmPackages_15; }).overrideAttrs (attrs: rec {
-          version = "1.31.0";
+      chapel-stable = pkgs: version: hash:
+        (pkgs.callPackage ./chapel.nix { llvmPackages = pkgs.llvmPackages_15; }).overrideAttrs (attrs: rec {
+          inherit version;
           name = "${attrs.pname}-${version}";
-          src = final.fetchFromGitHub {
+          src = pkgs.fetchFromGitHub {
             owner = "chapel-lang";
             repo = "chapel";
-            rev = "${version}";
-            hash = "sha256-/yH3NYPP1JaqJWjYADoFjq2djYbZ4ywuHtMIPnZfyBA=";
+            rev = version;
+            hash = hash;
           };
         });
 
+      chapel-overlay = final: prev: rec {
+        chapel = final.callPackage ./chapel.nix { llvmPackages = final.llvmPackages_16; };
+        chapel-gnu = final.callPackage ./chapel.nix { compiler = "gnu"; };
         chapelFixupBinary = final.callPackage ./chapel-fixup-binary.nix { };
+
+        chapel_1_33 = chapel-stable final "1.33.0" "";
+        chapel_1_31 = chapel-stable final "1.31.0" "sha256-/yH3NYPP1JaqJWjYADoFjq2djYbZ4ywuHtMIPnZfyBA=";
+
+        pr_XXX = chapel.overrideAttrs (attrs: {
+          # https://github.com/chapel-lang/chapel/pull/24323
+          src = final.fetchFromGitHub {
+            owner = "jeremiah-corrado";
+            repo = "chapel";
+            rev = "30f63ae36497639ab2e3ba3d46888c314bca1949";
+            hash = "sha256-jlv8lbQpKJg01rh+Ae2+LHelmdNmzhrilfSIyP7PCeU=";
+          };
+        });
       };
 
       examples-overlay = final: prev: {
@@ -103,7 +116,7 @@
         rec {
           default = chapel;
           examples = chapelExamples;
-          inherit chapel chapel_1_31 chapelFixupBinary;
+          inherit chapel chapel_1_31 chapelFixupBinary pr_XXX;
 
           single-locale = combine (
             (map chapel-with-settings (lib.cartesianProductOfSets {

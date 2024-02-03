@@ -110,6 +110,7 @@ let
   ]
   ++ lib.optionals (!chplStdenv.isDarwin && compiler == "llvm") [
     "--add-flags '-I ${llvmPackages.clang-unwrapped.lib}/lib/clang/${llvmPackages.clang.version}/include'"
+    "--add-flags '-I ${llvmPackages.clang}/resource-root/include'"
     "--add-flags '-I ${llvmPackages.bintools.libc.dev}/include'"
   ]
   ++ lib.optionals (!chplStdenv.isDarwin && compiler == "gnu") [
@@ -118,16 +119,12 @@ let
 in
 chplStdenv.mkDerivation rec {
   pname = "chapel";
-  version = "1.33.0";
+  version = "1.34.0-pre";
   src = fetchFromGitHub {
     owner = "chapel-lang";
     repo = "chapel";
-    rev = "0d0d6205baaf92635a61de939ea23e59ab1e7522";
-    hash = "sha256-FnolIHJ8moIx1rpsz3YjLmpLUi6KItd9ikBqdcTF2mA=";
-    # rev = "1.32.0";
-    # hash = "sha256-53hwgWM78Zgse0+d8EVzWESWN0MoDORkdgcbZhlv7hg=";
-    # rev = "e3a9c913516ac9abf48c9a8b86c199953f12030f"; # 15 Aug 2023
-    # hash = "sha256-MzCIzJdFAjK/BNx6C6gaF/3Y9lmw08CauVJfu6N+YrE=";
+    rev = "477aacb9bf0027d7977a4a5e788ff92597ef3482"; # 30 Jan 2024
+    hash = "sha256-EUjhxiLiXdqdgpB9dYT7YVwALJO1ElAYfgKutkfLdXc=";
   };
 
   outputs = [ "out" "third_party" ];
@@ -155,7 +152,7 @@ chplStdenv.mkDerivation rec {
     # Needed until https://github.com/chapel-lang/chapel/issues/24128 is resolved
     substituteInPlace third-party/Makefile \
       --replace 'cd chpl-venv && $(MAKE) c2chapel-venv' \
-                '@if [ -z "$$CHPL_DONT_BUILD_C2CHAPEL_VENV" ]; then cd chpl-venv && $(MAKE) c2chapel-venv; fi'
+                'if [ -z "$$CHPL_DONT_BUILD_C2CHAPEL_VENV" ]; then cd chpl-venv && $(MAKE) c2chapel-venv; fi'
     # tools/c2chapel/Makefile \
     #   --replace 'c2chapel-venv $(FAKES)' '$(FAKES)'
 
