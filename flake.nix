@@ -37,12 +37,19 @@
 
         pr_XXX = chapel.overrideAttrs (attrs: {
           # https://github.com/chapel-lang/chapel/pull/24323
-          src = final.fetchFromGitHub {
-            owner = "jeremiah-corrado";
-            repo = "chapel";
-            rev = "30f63ae36497639ab2e3ba3d46888c314bca1949";
-            hash = "sha256-jlv8lbQpKJg01rh+Ae2+LHelmdNmzhrilfSIyP7PCeU=";
-          };
+          patches = (attrs.patches or [ ]) ++ [
+            (final.fetchpatch {
+              name = "openStringFile.patch";
+              url = "https://github.com/jeremiah-corrado/chapel/commit/30f63ae36497639ab2e3ba3d46888c314bca1949.patch";
+              hash = "sha256-ElcOJXTF8rbk5b3WS+67dpGlgXjqz2xYoYyMqYArbzI=";
+            })
+          ];
+          # src = final.fetchFromGitHub {
+          #   owner = "jeremiah-corrado";
+          #   repo = "chapel";
+          #   rev = "30f63ae36497639ab2e3ba3d46888c314bca1949";
+          #   hash = "sha256-jlv8lbQpKJg01rh+Ae2+LHelmdNmzhrilfSIyP7PCeU=";
+          # };
         });
       };
 

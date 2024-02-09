@@ -123,8 +123,8 @@ chplStdenv.mkDerivation rec {
   src = fetchFromGitHub {
     owner = "chapel-lang";
     repo = "chapel";
-    rev = "477aacb9bf0027d7977a4a5e788ff92597ef3482"; # 30 Jan 2024
-    hash = "sha256-EUjhxiLiXdqdgpB9dYT7YVwALJO1ElAYfgKutkfLdXc=";
+    rev = "8db636f7c068ed6d22d1bd8edc2811442cd263e5"; # 9 Feb 2024
+    hash = "sha256-P89EdX87nSGVi5+u3nZ3E7Ge6hWJg6yq+HSjFFYgvUc=";
   };
 
   outputs = [ "out" "third_party" ];
