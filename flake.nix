@@ -29,8 +29,7 @@
 
       chapel-overlay = final: prev: rec {
         chapel = final.callPackage ./chapel.nix { llvmPackages = final.llvmPackages_16; };
-        chapel-gnu = final.callPackage ./chapel.nix { compiler = "gnu"; };
-        chapelFixupBinary = final.callPackage ./chapel-fixup-binary.nix { };
+        chapel-gnu = final.callPackage ./chapel.nix { llvmPackages = final.llvmPackages_16; compiler = "gnu"; };
 
         chapel_1_33 = chapel-stable final "1.33.0" "";
         chapel_1_31 = chapel-stable final "1.31.0" "sha256-/yH3NYPP1JaqJWjYADoFjq2djYbZ4ywuHtMIPnZfyBA=";
@@ -62,7 +61,6 @@
               src = ./src;
               nativeBuildInputs = with prev; [
                 (chapel.override { customSettings = settings; })
-                chapelFixupBinary
               ];
               buildPhase = ''
                 mkdir -p $out/bin
@@ -123,7 +121,7 @@
         rec {
           default = chapel;
           examples = chapelExamples;
-          inherit chapel chapel_1_31 chapelFixupBinary pr_XXX;
+          inherit chapel chapel-gnu chapel_1_31 chapel_1_33 pr_XXX;
 
           single-locale = combine (
             (map chapel-with-settings (lib.cartesianProductOfSets {

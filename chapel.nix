@@ -5,19 +5,20 @@
 , file
 , gcc
 , gmp
-, gnumake
 , gnum4
+, gnumake
 , lib
 , libunwind
 , llvmPackages
 , makeWrapper
 , patchelf
 , perl
+, pkg-config
 , pmix
 , python3
 , python3Packages
-, pkg-config
 , rdma-core
+, removeReferencesTo
 , stdenv
 , which
 , xz
@@ -151,8 +152,8 @@ chplStdenv.mkDerivation rec {
 
     # Needed until https://github.com/chapel-lang/chapel/issues/24128 is resolved
     substituteInPlace third-party/Makefile \
-      --replace 'cd chpl-venv && $(MAKE) c2chapel-venv' \
-                'if [ -z "$$CHPL_DONT_BUILD_C2CHAPEL_VENV" ]; then cd chpl-venv && $(MAKE) c2chapel-venv; fi'
+      --replace-fail 'cd chpl-venv && $(MAKE) c2chapel-venv' \
+                     'if [ -z "$$CHPL_DONT_BUILD_C2CHAPEL_VENV" ]; then cd chpl-venv && $(MAKE) c2chapel-venv; fi'
     # tools/c2chapel/Makefile \
     #   --replace 'c2chapel-venv $(FAKES)' '$(FAKES)'
 
@@ -268,6 +269,18 @@ chplStdenv.mkDerivation rec {
       ${wrapperArgs}
 
     ln -s $out/util/printchplenv $out/bin/
+
+    substitute ${./chapel-fixup-binary.sh} $out/bin/chapelFixupBinary \
+      --subst-var "shell" \
+      --subst-var "out" \
+      --subst-var "third_party" \
+      --replace "@removeReferencesTo@" "${removeReferencesTo}" \
+      --replace "@llvmPackages.clang@" "${llvmPackages.clang}" \
+      --replace "@llvmPackages.clang-unwrapped.lib@" "${llvmPackages.clang-unwrapped.lib}" \
+      --replace "@llvmPackages.llvm.dev@" "${llvmPackages.llvm.dev}" \
+      --replace "@llvmPackages.bintools.libc.dev@" "${llvmPackages.bintools.libc.dev}" \
+      --replace "@chplStdenv.cc.libc.dev@" "${chplStdenv.cc.libc.dev}"
+    chmod +x $out/bin/chapelFixupBinary
 
   '' + lib.optionalString llvmPackages.stdenv.isLinux ''
     # libChplFrontendShared.so contains a reference to lib/compiler/linux64-x86_64 in its RPATH.
