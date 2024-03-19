@@ -120,12 +120,12 @@ let
 in
 chplStdenv.mkDerivation rec {
   pname = "chapel";
-  version = "1.34.0-pre";
+  version = "2.1-pre";
   src = fetchFromGitHub {
     owner = "chapel-lang";
     repo = "chapel";
-    rev = "8db636f7c068ed6d22d1bd8edc2811442cd263e5"; # 9 Feb 2024
-    hash = "sha256-P89EdX87nSGVi5+u3nZ3E7Ge6hWJg6yq+HSjFFYgvUc=";
+    rev = "741f1c863f2701e46610d63b64c40b0beb3423dd"; # 19 Mar 2024
+    hash = "sha256-qTnJdFJ9yipcQU289JBdNYeLQnDA8gShqmQSmgIIHL0=";
   };
 
   outputs = [ "out" "third_party" ];

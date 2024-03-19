@@ -121,7 +121,7 @@
         rec {
           default = chapel;
           examples = chapelExamples;
-          inherit chapel chapel-gnu chapel_1_31 chapel_1_33 pr_XXX;
+          inherit chapel chapel_1_31 chapelFixupBinary pr_XXX;
 
           single-locale = combine (
             (map chapel-with-settings (lib.cartesianProductOfSets {
