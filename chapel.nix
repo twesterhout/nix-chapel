@@ -125,7 +125,7 @@ chplStdenv.mkDerivation rec {
     owner = "chapel-lang";
     repo = "chapel";
     rev = "741f1c863f2701e46610d63b64c40b0beb3423dd"; # 19 Mar 2024
-    hash = "sha256-qTnJdFJ9yipcQU289JBdNYeLQnDA8gShqmQSmgIIHL0=";
+    hash = "sha256-WoEocM47VHlGG+j17XmQmmYOBe/PY5CrNSP0pknR6Eg=";
   };
 
   outputs = [ "out" "third_party" ];
@@ -173,77 +173,13 @@ chplStdenv.mkDerivation rec {
     export ${chplBuildEnv}
     ./configure --chpl-home=$out
   '';
-  # ''
-  #   export CC=${llvmPackages.clang}/bin/cc
-  #   export CXX=${llvmPackages.clang}/bin/c++
-  #   export CHPL_LLVM=system
-  #   export CHPL_LLVM_CONFIG=${llvmPackages.llvm.dev}/bin/llvm-config
-  #   export CHPL_HOST_COMPILER=llvm
-  #   export CHPL_HOST_CC=${llvmPackages.clang}/bin/clang
-  #   export CHPL_HOST_CXX=${llvmPackages.clang}/bin/clang++
-  #   export CHPL_TARGET_CC=${llvmPackages.clang}/bin/clang
-  #   export CHPL_TARGET_CXX=${llvmPackages.clang}/bin/clang++
-  #   export CHPL_GMP=system
-  #   export CHPL_RE2=bundled
-  #   export CHPL_UNWIND=${if llvmPackages.stdenv.isDarwin then "none" else "system"}
-  # '' + lib.optionalString llvmPackages.stdenv.isLinux ''
-  #   export PMI_HOME=${pmix}
-  # '' + ''
-  #   export CHPL_LAUNCHER=none
-  #   export CHPL_TARGET_MEM=jemalloc
-  #   export CHPL_TARGET_CPU=none
-
-  #   ./configure --chpl-home=$out
-  # '';
 
   buildPhase = ''
     make -j$NIX_BUILD_CORES
     make -j$NIX_BUILD_CORES c2chapel
   '';
-  #   CHPL_LIB_PIC=none
-  #   make -j$NIX_BUILD_CORES CHPL_LIB_PIC=pic
-  # '' + lib.optionalString (compiler == "gnu") ''
-  #   for chpl_lib_pic in none pic; do
-  #     make -j$NIX_BUILD_CORES \
-  #       CHPL_LIB_PIC=$chpl_lib_pic \
-  #       CHPL_TARGET_MEM=cstdlib CHPL_HOST_MEM=cstdlib \
-  #       CHPL_UNWIND=none \
-  #       CHPL_TASKS=fifo \
-  #       CHPL_SANITIZE_EXE=address
-
-  #     make -j$NIX_BUILD_CORES \
-  #       CHPL_LIB_PIC=pic CHPL_UNWIND=none \
-  #       CHPL_TARGET_MEM=cstdlib CHPL_HOST_MEM=cstdlib \
-  #       CHPL_TASKS=qthreads
-
-  #   done
-  # '';
 
   enableParallelBuilding = true;
-
-  # buildPhase = ''
-  #   for arch in none nehalem; do
-  #     export CHPL_TARGET_CPU=$arch
-
-  #     # C backend
-  #     make CHPL_TARGET_COMPILER=gnu CHPL_TARGET_CC=gcc CHPL_TARGET_CXX=g++ CHPL_LIB_PIC=pic -j$NIX_BUILD_CORES
-
-  #     # Single locale
-  #     make CHPL_COMM=none CHPL_LIB_PIC=none -j$NIX_BUILD_CORES
-  #     make CHPL_COMM=none CHPL_LIB_PIC=pic -j$NIX_BUILD_CORES
-  #     # SMP
-  #     make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=smp -j$NIX_BUILD_CORES
-  # '' + lib.optionalString llvmPackages.stdenv.isLinux ''
-  #   # Infiniband
-  #   # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=everything CHPL_TARGET_MEM=cstdlib -j$NIX_BUILD_CORES
-  #   make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=fast -j$NIX_BUILD_CORES
-  #   # make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=ibv CHPL_GASNET_SEGMENT=large -j$NIX_BUILD_CORES
-  #   # UDP
-  #   make CHPL_COMM=gasnet CHPL_COMM_SUBSTRATE=udp CHPL_LAUNCHER=none -j$NIX_BUILD_CORES
-  # '' + ''
-  #     make c2chapel -j$NIX_BUILD_CORES
-  #   done
-  # '';
 
   postInstall = ''
     mkdir -p $third_party
@@ -261,15 +197,12 @@ chplStdenv.mkDerivation rec {
       --prefix PYTHONPATH : "${pycparser}/${python3.sitePackages}" \
       --prefix PYTHONPATH : "${pycparserext}/${python3.sitePackages}"
 
-    makeWrapper $out/bin/linux64-x86_64/chpl $out/bin/chpl \
-      ${wrapperArgs} \
-      ${compilerSpecificWrapperArgs}
-
     wrapProgram $out/util/printchplenv \
       ${wrapperArgs}
 
     ln -s $out/util/printchplenv $out/bin/
 
+  '' + lib.optionalString chplStdenv.isLinux ''
     substitute ${./chapel-fixup-binary.sh} $out/bin/chapelFixupBinary \
       --subst-var "shell" \
       --subst-var "out" \
@@ -282,7 +215,10 @@ chplStdenv.mkDerivation rec {
       --replace "@chplStdenv.cc.libc.dev@" "${chplStdenv.cc.libc.dev}"
     chmod +x $out/bin/chapelFixupBinary
 
-  '' + lib.optionalString llvmPackages.stdenv.isLinux ''
+    makeWrapper $out/bin/linux64-x86_64/chpl $out/bin/chpl \
+      ${wrapperArgs} \
+      ${compilerSpecificWrapperArgs}
+
     # libChplFrontendShared.so contains a reference to lib/compiler/linux64-x86_64 in its RPATH.
     # This folder contains libChplFrontend.so, but libChplFrontend.so has also
     # been installed to $out/lib/compiler/linux64-x86_64. Remove the temporary
