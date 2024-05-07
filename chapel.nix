@@ -94,6 +94,8 @@ let
 
   chplBuildEnv = lib.concatStringsSep " " (lib.mapAttrsToList (k: v: "${k}='${v}'") chplSettings);
 
+  chplPrefix = (if chplStdenv.isLinux then "linux64-" else "darwin-") + (if chplStdenv.isx86_64 then "x86_64" else "arm64");
+
   wrapperArgs = lib.concatStringsSep " " ([
     "--prefix PATH : '${lib.makeBinPath [coreutils gnumake pkg-config python3 which]}'"
     "--set-default CHPL_HOME $out"
@@ -116,6 +118,9 @@ let
   ]
   ++ lib.optionals (!chplStdenv.isDarwin && compiler == "gnu") [
     "--add-flags '-I ${chplStdenv.cc.libc.dev}/include'"
+  ]
+  ++ lib.optionals chplStdenv.isDarwin [
+    "--add-flags '-I ${chplStdenv.libc}/include'"
   ]);
 in
 chplStdenv.mkDerivation rec {
@@ -202,6 +207,9 @@ chplStdenv.mkDerivation rec {
 
     ln -s $out/util/printchplenv $out/bin/
 
+    makeWrapper $out/bin/${chplPrefix}/chpl $out/bin/chpl \
+      ${wrapperArgs} \
+      ${compilerSpecificWrapperArgs}
   '' + lib.optionalString chplStdenv.isLinux ''
     substitute ${./chapel-fixup-binary.sh} $out/bin/chapelFixupBinary \
       --subst-var "shell" \
@@ -214,10 +222,6 @@ chplStdenv.mkDerivation rec {
       --replace "@llvmPackages.bintools.libc.dev@" "${llvmPackages.bintools.libc.dev}" \
       --replace "@chplStdenv.cc.libc.dev@" "${chplStdenv.cc.libc.dev}"
     chmod +x $out/bin/chapelFixupBinary
-
-    makeWrapper $out/bin/linux64-x86_64/chpl $out/bin/chpl \
-      ${wrapperArgs} \
-      ${compilerSpecificWrapperArgs}
 
     # libChplFrontendShared.so contains a reference to lib/compiler/linux64-x86_64 in its RPATH.
     # This folder contains libChplFrontend.so, but libChplFrontend.so has also
