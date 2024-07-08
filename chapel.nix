@@ -1,3 +1,5 @@
+# Check https://chapel-lang.org/docs/usingchapel/prereqs.html#readme-prereqs to see the currently supported LLVM versions
+# Check https://search.nixos.org/packages?channel=unstable&from=0&size=50&sort=relevance&type=packages&query=llvmPackages to see which LLVM versions are available in Nixpkgs.
 { bash
 , cmake
 , coreutils
@@ -125,12 +127,12 @@ let
 in
 chplStdenv.mkDerivation rec {
   pname = "chapel";
-  version = "2.1-pre";
+  version = "2.2-pre";
   src = fetchFromGitHub {
     owner = "chapel-lang";
     repo = "chapel";
-    rev = "741f1c863f2701e46610d63b64c40b0beb3423dd"; # 19 Mar 2024
-    hash = "sha256-WoEocM47VHlGG+j17XmQmmYOBe/PY5CrNSP0pknR6Eg=";
+    rev = "6e69df0b333740a80eeae9dbefa72df0d2225725"; # July 7 2024
+    hash = "sha256-3oIqv80g0KEpwx+10stiGtZGVldXtAxyoLlD2LJknTc=";
   };
 
   outputs = [ "out" "third_party" ];
