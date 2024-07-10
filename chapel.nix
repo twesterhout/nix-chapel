@@ -72,6 +72,7 @@ let
     CC = "${llvmPackages.clang}/bin/cc";
     CXX = "${llvmPackages.clang}/bin/c++";
     CHPL_LLVM = "system";
+    CHPL_LLVM_SUPPORT = "system";
     CHPL_LLVM_CONFIG = "${llvmPackages.llvm.dev}/bin/llvm-config";
     CHPL_HOST_COMPILER = "llvm";
     CHPL_HOST_CC = "${llvmPackages.clang}/bin/clang";
@@ -84,6 +85,7 @@ let
     CC = "${gcc}/bin/cc";
     CXX = "${gcc}/bin/c++";
     CHPL_LLVM = "none";
+    CHPL_LLVM_SUPPORT = "system";
     CHPL_HOST_COMPILER = "gnu";
     CHPL_HOST_CC = "${gcc}/bin/gcc";
     CHPL_HOST_CXX = "${gcc}/bin/g++";
@@ -174,6 +176,9 @@ chplStdenv.mkDerivation rec {
     mkdir -p install/fakeHeaders/utils
     cp utils/custom.h install/fakeHeaders/utils/
     popd
+
+    substituteInPlace util/chplenv/chpl_llvm.py \
+      --replace-warn 'if macro in out' 'if False'
   '';
 
   configurePhase = ''
@@ -234,9 +239,10 @@ chplStdenv.mkDerivation rec {
   '';
 
   buildInputs =
-    lib.optionals (chplSettings.CHPL_UNWIND == "system") [ libunwind ]
+    [ llvmPackages.llvm llvmPackages.libclang.dev ]
+    ++ lib.optionals (chplSettings.CHPL_UNWIND == "system") [ libunwind ]
     ++ lib.optionals (chplSettings.CHPL_GMP == "system") [ gmp ]
-    ++ lib.optionals (compiler == "llvm") [ llvmPackages.clang llvmPackages.llvm llvmPackages.libclang.dev ]
+    ++ lib.optionals (compiler == "llvm") [ llvmPackages.clang ]
     ++ lib.optionals chplStdenv.isLinux [ pmix rdma-core ];
 
   nativeBuildInputs = [
