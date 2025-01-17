@@ -55,6 +55,30 @@
         chapel-gnu = final.callPackage ./chapel.nix { compiler = "gnu"; };
         chapel_2_0 = chapel-stable final "2.0.1" "sha256-BRUjWyngAg1bNXwpOFIkd/CggJKzrw9ugRwy95QHdOQ=";
         chapel_2_1 = chapel-stable final "2.1.0" "sha256-uMcaH8ruElHzUcbPSjrh/QsKr7rncGTsHVdg1mNlu5E=";
+
+        patchelf_0_19_0 = final.stdenv.mkDerivation {
+          pname = "patchelf";
+          version = "0.19.0";
+
+          src = final.fetchFromGitHub {
+            owner = "chitao1234";
+            repo = "patchelf";
+            rev = "65e14792061c298f1d2bc44becd48a10cbf0bc81";
+            hash = "sha256-gOHVc9puN8pp8K1Yaf9wMbF3zJEcKgVCA+Ri/gZW53Q=";
+          };
+
+          # Drop test that fails on musl (?)
+          postPatch = lib.optionalString final.stdenv.hostPlatform.isMusl ''
+            substituteInPlace tests/Makefile.am \
+              --replace "set-rpath-library.sh" ""
+          '';
+
+          setupHook = [ ./setup-hook.sh ];
+
+          nativeBuildInputs = [ final.autoreconfHook ];
+          buildInputs = [ ];
+
+        };
       };
 
       # examples-overlay = final: prev: {
@@ -112,9 +136,17 @@
       packages = flake-utils.lib.eachDefaultSystemMap (system:
         let pkgs = pkgs-for system; in {
           inherit (pkgs) chapel chapel_2_0 chapel_2_1;
+          inherit (pkgs) patchelf_0_19_0;
           default = pkgs.chapel;
 
-          hm = (chapel-with-compiler-settings pkgs.chapel "gnu" { CHPL_TARGET_MEM = "cstdlib"; CHPL_HOST_MEM = "cstdlib"; CHPL_UNWIND = "none"; CHPL_TASKS = "fifo"; CHPL_SANITIZE_EXE = "address"; CHPL_LIB_PIC = "none"; });
+          hm = (chapel-with-compiler-settings pkgs.chapel "gnu" { CHPL_TARGET_MEM = "cstdlib"; CHPL_HOST_MEM = "cstdlib"; CHPL_UNWIND = "none"; CHPL_TASKS = "fifo"; CHPL_SANITIZE_EXE = "address"; CHPL_LIB_PIC = "none"; }).overrideAttrs (attrs: {
+            src = pkgs.fetchFromGitHub {
+              owner = "chapel-lang";
+              repo = "chapel";
+              rev = "9eb00784b83a743b4fb2f38347a6ed0664ef4677";
+              hash = "sha256-ccu0r76IaYG6AuOM+p+xFA/AuipGYGq1YMPeWnn/By4=";
+            };
+          });
 
           all = pkgs.linkFarm "nix-chapel-all" (lib.lists.imap0 (i: x: { name = toString i; path = x; }) ([
             # Add more configurations here

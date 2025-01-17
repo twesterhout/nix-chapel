@@ -56,15 +56,46 @@ let
       ply
     ];
   };
+  # force_link_glibc_2_17 = chplStdenv.mkDerivation {
+  #   pname = "force_link_glibc_2.17";
+  #   version = "1.0";
+  #   src = ./force_link_glibc_2.17.h;
+  #   dontUnpack = true;
+  #   dontConfigure = true;
+  #   dontBuild = true;
+  #   installPhase = ''
+  #     mkdir -p $out/include
+  #     cp $src $out/include/force_link_glibc_2.17.h
+  #     ls -l $out/include
+  #     head $out/include/force_link_glibc_2.17.h
+  #   '';
+  # };
+  force_link_glibc_2_27 = chplStdenv.mkDerivation {
+    pname = "force_link_glibc_2.27";
+    version = "1.0";
+    src = ./force_link_glibc_2.27.h;
+    dontUnpack = true;
+    dontConfigure = true;
+    dontBuild = true;
+    installPhase = ''
+      mkdir -p $out/include
+      cp $src $out/include/force_link_glibc_2.27.h
+      ls -l $out/include
+      head $out/include/force_link_glibc_2.27.h
+    '';
+  };
 
   commonSettings = {
-    CHPL_GMP = "system";
-    CHPL_RE2 = "bundled";
-    CHPL_UNWIND = if llvmPackages.stdenv.isDarwin then "none" else "system";
+    CHPL_GMP = "none";
+    CHPL_RE2 = "none";
+    CHPL_UNWIND = "none"; # if llvmPackages.stdenv.isDarwin then "none" else "system";
     CHPL_LAUNCHER = "none";
-    CHPL_TARGET_MEM = "jemalloc";
+    CHPL_HOST_MEM = "cstdlib";
+    CHPL_TARGET_MEM = "cstdlib"; # "jemalloc";
     CHPL_TARGET_CPU = "none";
-  } // lib.optionalAttrs llvmPackages.stdenv.isLinux {
+    CHPL_LIB_PIC = "pic";
+    CHPL_HWLOC = "none";
+  } // lib.optionalAttrs (false && llvmPackages.stdenv.isLinux) {
     PMI_HOME = "${pmix}";
   };
 
@@ -111,6 +142,7 @@ let
 
   compilerSpecificWrapperArgs = lib.concatStringsSep " " ([
     "--add-flags '-L ${xz.out}/lib'"
+    "--add-flags '-I ${force_link_glibc_2_27}/include'"
   ]
   ++ lib.optionals (chplSettings.CHPL_GMP == "system") [
     "--add-flags '-L ${gmp}/lib'"
@@ -177,12 +209,39 @@ chplStdenv.mkDerivation rec {
     cp utils/custom.h install/fakeHeaders/utils/
     popd
 
-    substituteInPlace util/chplenv/chpl_llvm.py \
-      --replace-warn 'if macro in out' 'if False'
+    substituteInPlace runtime/include/sys_basic.h \
+      --replace-fail '#include <sys/types.h>' \
+                     '#include <force_link_glibc_2.27.h>
+    #include <sys/types.h>'
+
+    substituteInPlace runtime/include/chpl-thread-local-storage.h \
+      --replace-fail '#define CHPL_TLS' \
+                     '//'
+
+    substituteInPlace runtime/src/chpl-file-utils.c \
+      --replace-fail '#include <sys/stat.h>' '#include <sys/stat.h>
+    #include <fcntl.h>
+    #ifndef AT_EMPTY_PATH
+    #define AT_EMPTY_PATH       0x1000
+    #endif' \
+      --replace-fail 'fstat(file1->fd, &f1)' 'fstatat(file1->fd, "", &f1, AT_EMPTY_PATH)' \
+      --replace-fail 'fstat(file2->fd, &f2)' 'fstatat(file2->fd, "", &f2, AT_EMPTY_PATH)'
+
+    substituteInPlace runtime/src/qio/sys.c \
+      --replace-fail '#include <fcntl.h>' '#include <fcntl.h>
+    #ifndef AT_EMPTY_PATH
+    #define AT_EMPTY_PATH       0x1000
+    #endif' \
+      --replace-fail 'fstat(fd, buf)' 'fstatat(fd, "", buf, AT_EMPTY_PATH)'
+    # substituteInPlace util/chplenv/chpl_llvm.py \
+    #   --replace-warn 'if macro in out' 'if False'
   '';
 
   configurePhase = ''
     export ${chplBuildEnv}
+    export CFLAGS="-I ${force_link_glibc_2_27}/include -include force_link_glibc_2.27.h $CFLAGS"
+    export CXXFLAGS="-I ${force_link_glibc_2_27}/include -include force_link_glibc_2.27.h $CXXFLAGS"
+    export RUNTIME_CFLAGS='-I ${force_link_glibc_2_27}/include -include force_link_glibc_2.27.h'
     ./configure --chpl-home=$out
   '';
 
@@ -239,7 +298,7 @@ chplStdenv.mkDerivation rec {
   '';
 
   buildInputs =
-    [ llvmPackages.llvm llvmPackages.libclang.dev ]
+    [ force_link_glibc_2_27 llvmPackages.llvm llvmPackages.libclang.dev ]
     ++ lib.optionals (chplSettings.CHPL_UNWIND == "system") [ libunwind ]
     ++ lib.optionals (chplSettings.CHPL_GMP == "system") [ gmp ]
     ++ lib.optionals (compiler == "llvm") [ llvmPackages.clang ]
